@@ -447,28 +447,130 @@
     </div>
   </section>
 
-  <section class="sim-section">
-    <div class="section-heading">
-      <p class="eyebrow">E-Koolikott</p>
-      <h2>Kirjeldus E-Koolikotti lisamiseks</h2>
+  <section class="ekoolikott-premium">
+  <div class="ek-header">
+    <p class="eyebrow">E-Koolikott</p>
+    <h2>Kirjeldus E-Koolikotti lisamiseks</h2>
+    <p>
+      Lühikirjeldus on kohe nähtav. Pikema kirjelduse saab avada nupuga ja vajadusel kopeerida.
+    </p>
+  </div>
+
+  <div class="ek-panel">
+    <div class="ek-short">
+      <h3>Lühikirjeldus</h3>
+      <p>
+        LoodusLab AI on eestikeelne 7.–12. klassi loodusteaduste simulatsioonide
+        kogumik. Materjal sisaldab 9 interaktiivset simulatsiooni füüsika ja
+        keemia teemadel ning toetab õpetaja tööd ja õpilaste aktiivset õppimist.
+      </p>
     </div>
 
-    <div class="prompt-box">
-      LoodusLab AI on eestikeelne 7.–12. klassi loodusteaduste simulatsioonide kogumik.
-      Materjal sisaldab üheksat interaktiivset simulatsiooni füüsika ja keemia teemadel:
-      tihedus, vedeliku rõhk, pH, harmooniline võnkumine ja Ampère’i seadus.
-      Kogumik toetab uurimuslikku õpet, graafikute tõlgendamist, arvutusoskust ja
-      õpilaste aktiivset õppimist. Õpetaja juhendis on kasutussoovitused, õpitulemused,
-      näidisküsimused, diferentseerimise võimalused ja AI-promptid.
-      Märksõna: #TIkonkurss2026
+    <div class="ek-actions">
+      <button class="btn primary" onclick="copyShortDesc()">Kopeeri lühikirjeldus</button>
+      <button class="btn secondary" id="toggleLongBtn" onclick="toggleLongDesc()">
+        Näita pikemat kirjeldust
+      </button>
     </div>
-  </section>
+
+    <div class="ek-long-premium" id="longDesc">
+      <div class="ek-long-inner">
+
+        <h3>Pikk kirjeldus</h3>
+
+        <p>
+          LoodusLab AI on Eesti õpetaja loodud digitaalne õppematerjalide kogumik,
+          mis ühendab interaktiivsed simulatsioonid, õpetaja juhendid ja
+          tehisintellekti toetavad kasutusvõimalused ühele veebiplatvormile.
+        </p>
+
+        <p>
+          Kogumik on loodud 7.–12. klassi õpilastele ning toetab põhikooli ja
+          gümnaasiumi loodusteaduste õppekava teemasid. Materjalid sobivad
+          kasutamiseks klassiruumis projektoriga, arvutiklassis, tahvliseadmes
+          ning iseseisvaks õppimiseks kodus.
+        </p>
+
+        <h4>Mida kogumik sisaldab?</h4>
+        <ul>
+          <li>9 interaktiivset simulatsiooni füüsika ja keemia teemadel</li>
+          <li>õpetaja juhend kogu kogumikule</li>
+          <li>otsing ja klassiastme filtrid</li>
+          <li>visuaalsed ekraanipildid lihtsaks valikuks</li>
+          <li>AI kasutamise ideed õpet toetaval viisil</li>
+          <li>valmis kasutamiseks veebis ilma installita</li>
+        </ul>
+
+        <h4>Näited simulatsioonidest</h4>
+        <ul>
+          <li>pH labor</li>
+          <li>Vedeliku rõhk</li>
+          <li>Magnetväli</li>
+          <li>Elektriväli</li>
+          <li>Ringliikumise dünaamika</li>
+          <li>Harmooniline võnkumine</li>
+          <li>Ampère’i seadus</li>
+          <li>Kolvisüsteem</li>
+          <li>Päikesepaneelide mudel</li>
+        </ul>
+
+        <h4>Kuidas see aitab õpetajat?</h4>
+        <p>Materjal on loodud eesmärgiga vähendada õpetaja töökoormust.</p>
+        <ul>
+          <li>leida kiiresti sobiva simulatsiooni tunni teemaks</li>
+          <li>kasutada valmis visuaale nähtuste selgitamiseks</li>
+          <li>anda õpilastele uurimuslikke ülesandeid</li>
+          <li>kasutada juhendis toodud küsimusi ja tööideid</li>
+          <li>rakendada AI-promptide näiteid tagasisideks ja diferentseerimiseks</li>
+        </ul>
+
+        <h4>Kuidas see aitab õpilast?</h4>
+        <ul>
+          <li>uurida nähtusi ise suurusi muutes</li>
+          <li>mõista seoseid valemi, nähtuse ja graafiku vahel</li>
+          <li>teha järeldusi katsetulemuste põhjal</li>
+          <li>õppida aktiivselt, mitte ainult passiivselt lugedes</li>
+          <li>kasutada AI-d mõistmise toetamiseks</li>
+        </ul>
+
+        <h4>Tehnilised eelised</h4>
+        <ul>
+          <li>töötab brauseris</li>
+          <li>ei vaja kontot ega paigaldust</li>
+          <li>sobib arvutisse, tahvlisse ja telefoni</li>
+          <li>eestikeelne kasutajaliides</li>
+          <li>tasuta kasutatav</li>
+        </ul>
+
+        <h4>Miks see on oluline?</h4>
+        <p>
+          Paljud kvaliteetsed loodusteaduste simulatsioonid on ingliskeelsed või ei
+          arvesta Eesti õppekava vajadustega. LoodusLab AI pakub eestikeelset,
+          õpetaja loodud ja praktiliselt kasutatavat alternatiivi.
+        </p>
+
+        <h4>Märksõnad</h4>
+        <p>
+          füüsika, keemia, simulatsioon, interaktiivne õpe, AI,
+          tehisintellekt, õpetaja töö lihtsustamine, uurimuslik õpe,
+          gümnaasium, põhikool, STEM, digitaalne õppematerjal
+        </p>
+
+        <p class="contest-tag">#TIkonkurss2026</p>
+
+        <button class="btn primary" onclick="copyLongDesc()">Kopeeri pikk kirjeldus</button>
+      </div>
+    </div>
+  </div>
+</section>
 
 </main>
 
 <footer>
   <p>LoodusLab AI · Õpetaja juhend</p>
 </footer>
+
+<script src="../app.js"></script>
 
 </body>
 </html>
