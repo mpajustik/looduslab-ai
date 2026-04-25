@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Elektrivälja ja Coulombi seaduse simulatsioon</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --line: #d7dfeb;
+      --text: #1d2a3a;
+      --muted: #5c6b7a;
+      --accent: #2357d8;
+      --accent-2: #1f8f5f;
+      --warn: #c98a12;
+      --danger: #d64545;
+      --good: #1b8d4b;
+      --shadow: 0 10px 24px rgba(31, 53, 93, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f7f9fd 0%, #eef3fb 100%);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 1450px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .title-card, .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .title-card {
+      padding: 18px 20px;
+      margin-bottom: 14px;
+    }
+
+    h1, h2, h3 { margin: 0 0 10px 0; }
+    p { line-height: 1.45; }
+
+    .top-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr 340px;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .card { padding: 16px; }
+
+    .controls label,
+    .task-controls label {
+      display: block;
+      font-weight: 700;
+      margin: 12px 0 6px;
+      font-size: 17px;
+    }
+
+    .controls small, .muted {
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.45;
+    }
+
+    input[type="range"] { width: 100%; }
+    input[type="number"], select, input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid #bcc8da;
+      font-size: 15px;
+      background: #fff;
+    }
+
+    .value-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .btn-row, .mini-btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 10px rgba(35,87,216,0.2);
+    }
+
+    button.secondary {
+      background: #e8eefc;
+      color: #2149ae;
+      box-shadow: none;
+    }
+
+    button.good {
+      background: var(--accent-2);
+    }
+
+    button.warn {
+      background: var(--warn);
+    }
+
+    button.danger {
+      background: var(--danger);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    canvas {
+      width: 100%;
+      display: block;
+      border-radius: 14px;
+      background: linear-gradient(180deg, #fbfcff 0%, #f2f6ff 100%);
+      border: 1px solid #d4def0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .stat {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfdff;
+    }
+
+    .stat-title {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .formula {
+      font-family: "Courier New", monospace;
+      font-size: 17px;
+      background: #f4f7ff;
+      border: 1px solid #d7e1f5;
+      padding: 8px 10px;
+      border-radius: 10px;
+      margin: 8px 0;
+    }
+
+    .subgrid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.95fr;
+      gap: 14px;
+      margin-top: 14px;
+      align-items: start;
+      padding: 0 10px 10px 10px;
+    }
+
+    .task-box {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fafcff;
+      margin-bottom: 12px;
+    }
+
+    .task-box.active {
+      border: 2px solid #9eb8ff;
+      background: #f5f8ff;
+    }
+
+    .task-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .pill {
+      display: inline-block;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #edf3ff;
+      color: #3357ba;
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    .feedback {
+      min-height: 64px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      margin-top: 12px;
+      white-space: pre-line;
+    }
+
+    .feedback.good {
+      border-color: #a6debb;
+      background: #f2fcf6;
+      color: #146d39;
+    }
+
+    .feedback.bad {
+      border-color: #efb4b4;
+      background: #fff6f6;
+      color: #993030;
+    }
+
+    .scorebar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .score-card {
+      padding: 10px;
+      border-radius: 12px;
+      background: #f8fbff;
+      border: 1px solid var(--line);
+      text-align: center;
+    }
+
+    .big {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .formula-list li { margin-bottom: 8px; }
+    ul { padding-left: 18px; }
+
+    .hidden-in-test {
+      transition: opacity 0.2s ease;
+    }
+
+    .legend {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      font-size: 15px;
+      color: var(--muted);
+    }
+
+    .legend span::before {
+      content: "";
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: -1px;
+    }
+
+    .lplus::before { background: #d53b3b; }
+    .lminus::before { background: #2f72dc; }
+    .lfield::before { background: #7d8ea8; }
+    .lforce::before { background: #1f8f5f; }
+
+    @media (max-width: 1200px) {
+      .top-grid, .bottom-grid, .subgrid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="title-card">
+      <h1>Elektrivälja ja Coulombi seaduse simulatsioon</h1>
+      <p>
+        Simulatsioon aitab uurida, kuidas <strong>laengud</strong>, <strong>kaugus</strong>, <strong>elektriväli</strong> ja <strong>Coulombi jõud</strong> on omavahel seotud.
+        Kasuta kõigepealt avastusrežiimi ja seejärel lahenda ülesandeid. Testirežiimis peidetakse osa abidest ära.
+      </p>
+    </div>
+
+    <div class="top-grid">
+      <div class="card controls">
+        <h2>Juhtimine</h2>
+
+        <label for="q1Slider">Laeng q₁ (µC)</label>
+        <input id="q1Slider" type="range" min="-8" max="8" step="0.5" value="4" />
+        <div class="value-line"><span>q₁ väärtus</span><strong id="q1Value">+4.0 µC</strong></div>
+
+        <label for="q2Slider">Laeng q₂ (µC)</label>
+        <input id="q2Slider" type="range" min="-8" max="8" step="0.5" value="-2" />
+        <div class="value-line"><span>q₂ väärtus</span><strong id="q2Value">-2.0 µC</strong></div>
+
+        <label for="distanceSlider">Laengute vahekaugus r (cm)</label>
+        <input id="distanceSlider" type="range" min="20" max="240" step="1" value="60" />
+        <div class="value-line"><span>Praegune kaugus</span><strong id="distanceValue">60 cm</strong></div>
+
+        <label for="testChargeSlider">Katselaeng qₜ (µC)</label>
+        <input id="testChargeSlider" type="range" min="0.5" max="5" step="0.5" value="1" />
+        <div class="value-line"><span>Katselaeng</span><strong id="testChargeValue">+1.0 µC</strong></div>
+
+        <label for="modeSelect">Režiim</label>
+        <select id="modeSelect">
+          <option value="explore">Avastusrežiim</option>
+          <option value="practice">Harjutusrežiim</option>
+          <option value="test">Testirežiim</option>
+        </select>
+
+        <div class="btn-row">
+          <button id="toggleFieldBtn" class="secondary">Peida väljajooned</button>
+          <button id="toggleLabelsBtn" class="secondary">Peida sildid</button>
+          <button id="resetBtn" class="warn">Lähtesta</button>
+        </div>
+
+        <div class="legend">
+          <span class="lplus">positiivne laeng</span>
+          <span class="lminus">negatiivne laeng</span>
+          <span class="lfield">elektriväli</span>
+          <span class="lforce">jõuvektor</span>
+        </div>
+
+        <div class="task-box" style="margin-top:14px;">
+          <div class="task-title">Olulised konstandid ja märgid</div>
+          <div><strong>Coulombi konstant:</strong> k = 8.99 · 10<sup>9</sup> N·m²/C²</div>
+          <div style="margin-top:6px;"><strong>Mikrokuulomb:</strong> 1 µC = 1 · 10<sup>-6</sup> C</div>
+          <div style="margin-top:6px;"><strong>Lilla nool simulatsioonis:</strong> jõu suund laengul</div>
+          <div style="margin-top:6px;"><strong>Hallikas-sinised nooled:</strong> elektrivälja suund ruumis</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Simulatsioon</h2>
+        <canvas id="simCanvas" width="760" height="420"></canvas>
+        <canvas id="graphCanvas" width="760" height="180" style="margin-top:10px;"></canvas>
+        <div class="mini-btn-row">
+          <button id="placeTestChargeBtn" class="secondary">Aseta katselaeng keskele</button>
+          <button id="snapTaskBtn" class="secondary">Laadi aktiivse ülesande seaded</button>
+        </div>
+        <p class="muted" style="margin-top:10px; font-size:18px; line-height:1.5;">
+          Lohista laenguid hiirega. Väike must punkt on katselaeng. <strong>Lilla nool</strong> laengute juures näitab laengutevahelise jõu suunda.
+          <strong>Roheline nool</strong> katselaengul näitab, mis suunas elektriväli katselaengut mõjutaks.
+          <strong>Hallikas-sinised pikad nooled</strong> näitavad elektrivälja suunda ruumis.
+        </p>
+      </div>
+
+      <div class="card hidden-in-test" id="infoPanel">
+        <h2>Reaalajas andmed</h2>
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-title">Coulombi jõud laengute vahel</div>
+            <div class="stat-value" id="forceValue">0 N</div>
+          </div>
+          <div class="stat">
+            <div class="stat-title">Elektrivälja tugevus katselaengul</div>
+            <div class="stat-value" id="fieldValue">0 N/C</div>
+          </div>
+          <div class="stat">
+            <div class="stat-title">Jõud katselaengule</div>
+            <div class="stat-value" id="testForceValue">0 N</div>
+          </div>
+          <div class="stat">
+            <div class="stat-title">Vahekaugus r</div>
+            <div class="stat-value" id="distanceMeters">0 m</div>
+          </div>
+        </div>
+        <p style="margin-top:14px;"><strong>Lilla noole tähendus:</strong> näitab, mis suunas mõjub Coulombi jõud laengule.</p>
+        <p><strong>Rohelise noole tähendus:</strong> näitab välja suunda katselaengul.</p>
+      </div>
+    </div>
+
+    <div class="bottom-grid">
+      <div class="card">
+        <h2>Simulatsioonipõhised ülesanded</h2>
+        <p>
+          All on 5 ülesannet. Mõnes tuleb vastus <strong>arvutada</strong>, mõnes tuleb leida õige seadistus simulatsioonis.
+          Harjutusrežiimis näed rohkem abi. Testirežiimis peidetakse reaalajas tulemused ja lahenduse vihjed.
+        </p>
+        <div id="taskList"></div>
+      </div>
+
+      <div class="card task-controls">
+        <h2>Lahenda aktiivne ülesanne</h2>
+        <div class="scorebar">
+          <div class="score-card">
+            <div class="muted">Punktid</div>
+            <div class="big" id="scoreValue">0</div>
+          </div>
+          <div class="score-card">
+            <div class="muted">Lahendatud</div>
+            <div class="big" id="solvedValue">0/5</div>
+          </div>
+          <div class="score-card">
+            <div class="muted">Katseid</div>
+            <div class="big" id="attemptsValue">0</div>
+          </div>
+          <div class="score-card">
+            <div class="muted">Režiim</div>
+            <div class="big" id="modeLabel">Avastus</div>
+          </div>
+        </div>
+
+        <label for="answerInput">Sinu vastus</label>
+        <input id="answerInput" type="text" placeholder="Sisesta arv või lühike vastus" />
+        <div class="value-line">
+          <span>Kasuta komakoha asemel punkti või koma</span>
+          <strong id="answerUnit">Ühik: –</strong>
+        </div>
+
+        <div class="btn-row">
+          <button id="checkBtn" class="good">Kontrolli vastust</button>
+          <button id="hintBtn" class="secondary">Vihje</button>
+          <button id="solutionBtn" class="secondary hidden-in-test">Näita lahenduskäiku</button>
+          <button id="nextBtn">Järgmine ülesanne</button>
+        </div>
+
+        <div id="feedbackBox" class="feedback">Vali ülesanne ja alusta.</div>
+
+        <div class="subgrid hidden-in-test" id="helpPanel">
+          <div>
+            <h3>Olulised sammud</h3>
+            <ul class="formula-list">
+              <li>Muuda mikrokuulombid vajadusel kuulombiteks: 1 µC = 1 · 10<sup>-6</sup> C.</li>
+              <li>Muuda sentimeetrid meetriteks: 100 cm = 1 m.</li>
+              <li>Kasuta jõu jaoks valemit <strong>F = k·|q₁q₂|/r²</strong>.</li>
+              <li>Kasuta välja jaoks valemit <strong>E = k·|Q|/r²</strong>.</li>
+              <li>Mõtle alati eraldi: kas küsitakse <strong>jõudu</strong>, <strong>välja</strong> või <strong>suunda</strong>.</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Õpetaja märkus</h3>
+            <p class="muted">
+              Kõige sagedasemad vead on ühikute teisendamine, kauguse ruut ununeb ja segi aetakse välja tugevus ning jõud.
+              Simulatsioon aitab siduda pildi, vektori ja arvutuse üheks tervikuks.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const k = 8.99e9;
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const graphCanvas = document.getElementById('graphCanvas');
+    const gctx = graphCanvas.getContext('2d');
+
+    const q1Slider = document.getElementById('q1Slider');
+    const q2Slider = document.getElementById('q2Slider');
+    const distanceSlider = document.getElementById('distanceSlider');
+    const testChargeSlider = document.getElementById('testChargeSlider');
+    const modeSelect = document.getElementById('modeSelect');
+
+    const q1Value = document.getElementById('q1Value');
+    const q2Value = document.getElementById('q2Value');
+    const distanceValue = document.getElementById('distanceValue');
+    const testChargeValue = document.getElementById('testChargeValue');
+
+    const forceValue = document.getElementById('forceValue');
+    const fieldValue = document.getElementById('fieldValue');
+    const testForceValue = document.getElementById('testForceValue');
+    const distanceMeters = document.getElementById('distanceMeters');
+    const modeLabel = document.getElementById('modeLabel');
+    const helpPanel = document.getElementById('helpPanel');
+    const infoPanel = document.getElementById('infoPanel');
+
+    const answerInput = document.getElementById('answerInput');
+    const answerUnit = document.getElementById('answerUnit');
+    const feedbackBox = document.getElementById('feedbackBox');
+    const scoreValue = document.getElementById('scoreValue');
+    const solvedValue = document.getElementById('solvedValue');
+    const attemptsValue = document.getElementById('attemptsValue');
+
+    let showField = true;
+    let showLabels = true;
+    let dragging = null;
+    let attempts = 0;
+    let score = 0;
+    let solvedCount = 0;
+
+    const chargeRadius = 22;
+    const pxToMeter = 0.005;
+
+    const state = {
+      q1MicroC: 4,
+      q2MicroC: -2,
+      testMicroC: 1,
+      charge1: { x: 320, y: 220 },
+      charge2: { x: 440, y: 220 },
+      testCharge: { x: 380, y: 140 },
+      mode: 'explore'
+    };
+
+    const tasks = [
+      {
+        id: 1,
+        title: 'Arvuta jõud kahe laengu vahel',
+        type: 'numeric',
+        unit: 'N',
+        points: 2,
+        prompt: 'Sea q₁ = +4 µC, q₂ = -2 µC ja r = 60 cm. Arvuta Coulombi jõu suurus laengute vahel.',
+        setup() {
+          applySetup({ q1: 4, q2: -2, distanceCm: 60, testMicroC: 1, testPos: {x:380,y:140} });
+        },
+        getAnswer() {
+          return computePairForceAbs();
+        },
+        tolerance: 0.03,
+        hint: 'Muuda µC → C ja cm → m. Seejärel kasuta F = k·|q₁q₂|/r².',
+        solution() {
+          return 'q₁ = 4·10⁻⁶ C, q₂ = 2·10⁻⁶ C, r = 0.60 m\nF = 8.99·10⁹ · (4·10⁻⁶ · 2·10⁻⁶) / 0.60²\nF ≈ 0.20 N';
+        }
+      },
+      {
+        id: 2,
+        title: 'Leia elektrivälja tugevus keskpunktis',
+        type: 'numeric',
+        unit: 'N/C',
+        points: 3,
+        prompt: 'Sea q₁ = +6 µC ja q₂ = -6 µC, r = 100 cm. Aseta katselaeng täpselt keskele. Leia elektrivälja tugevuse suurus keskpunktis.',
+        setup() {
+          applySetup({ q1: 6, q2: -6, distanceCm: 100, testMicroC: 1, testPos: {x:380,y:220} });
+        },
+        getAnswer() {
+          const E = computeElectricFieldAt(state.testCharge.x, state.testCharge.y);
+          return Math.hypot(E.x, E.y);
+        },
+        tolerance: 0.03,
+        hint: 'Dipooli keskpunktis liituvad väljad samas suunas.',
+        solution() {
+          return 'Mõlemad laengud on keskpunktist 0.50 m kaugusel. Ühe laengu väli: E₁ = k·Q/r² ≈ 215760 N/C. Kuna väljad on samas suunas, siis E ≈ 431520 N/C.';
+        }
+      },
+      {
+        id: 3,
+        title: 'Muuda kaugus nii, et jõud väheneks 4 korda',
+        type: 'distance-check',
+        unit: 'cm',
+        points: 2,
+        prompt: 'Sea q₁ = +3 µC ja q₂ = +3 µC. Alguses olgu r = 40 cm. Muuda nüüd kaugus selliseks, et jõud oleks 4 korda väiksem kui alguses. Sisesta uus kaugus sentimeetrites.',
+        setup() {
+          applySetup({ q1: 3, q2: 3, distanceCm: 40, testMicroC: 1, testPos: {x:380,y:140} });
+        },
+        getAnswer() {
+          return 80;
+        },
+        tolerance: 0.01,
+        hint: 'Kui F ~ 1/r², siis 4 korda väiksema jõu jaoks peab kaugus olema 2 korda suurem.',
+        solution() {
+          return 'Kui jõud peab vähenema 4 korda, siis kaugus peab suurenema √4 = 2 korda. Seega 40 cm → 80 cm.';
+        }
+      },
+      {
+        id: 4,
+        title: 'Määra, kas laengud tõmbuvad või tõukuvad',
+        type: 'text',
+        unit: 'sõna',
+        points: 1,
+        prompt: 'Sea q₁ = -5 µC ja q₂ = -1 µC ning r = 90 cm. Kas laengud tõmbuvad või tõukuvad? Sisesta üks sõna: "tõmbuvad" või "tõukuvad".',
+        setup() {
+          applySetup({ q1: -5, q2: -1, distanceCm: 90, testMicroC: 1, testPos: {x:380,y:140} });
+        },
+        getAnswer() {
+          return 'tõukuvad';
+        },
+        hint: 'Samanimelised laengud tõukuvad.',
+        solution() {
+          return 'Mõlemad laengud on negatiivsed. Samanimelised laengud tõukuvad.';
+        }
+      },
+      {
+        id: 5,
+        title: 'Leia jõud katselaengule',
+        type: 'numeric',
+        unit: 'N',
+        points: 3,
+        prompt: 'Sea q₁ = +8 µC, q₂ = 0 µC ja r = 120 cm. Aseta katselaeng qₜ = +2 µC 30 cm kaugusele q₁-st paremale samale kõrgusele. Arvuta jõu suurus katselaengule.',
+        setup() {
+          applySetup({ q1: 8, q2: 0, distanceCm: 120, testMicroC: 2, testPos: {x: 350, y: 220} });
+        },
+        getAnswer() {
+          const E = computeElectricFieldAt(state.testCharge.x, state.testCharge.y);
+          const qt = Math.abs(state.testMicroC) * 1e-6;
+          return Math.hypot(E.x, E.y) * qt;
+        },
+        tolerance: 0.03,
+        hint: 'Siin mõjutab katselaengut ainult q₁, sest q₂ = 0.',
+        solution() {
+          return 'Katselaeng on q₁-st 30 cm = 0.30 m kaugusel. F = k·|q₁qₜ|/r² ≈ 1.60 N.';
+        }
+      }
+    ];
+
+    let activeTaskIndex = 0;
+    const solvedTasks = new Set();
+
+    function signedMicroC(v) {
+      return `${v >= 0 ? '+' : ''}${v.toFixed(1)} µC`;
+    }
+
+    function updateValueLabels() {
+      q1Value.textContent = signedMicroC(Number(q1Slider.value));
+      q2Value.textContent = signedMicroC(Number(q2Slider.value));
+      distanceValue.textContent = `${Number(distanceSlider.value).toFixed(0)} cm`;
+      testChargeValue.textContent = `+${Number(testChargeSlider.value).toFixed(1)} µC`;
+    }
+
+    function syncStateFromControls(reposition = true) {
+      state.q1MicroC = Number(q1Slider.value);
+      state.q2MicroC = Number(q2Slider.value);
+      state.testMicroC = Number(testChargeSlider.value);
+      const distPx = Number(distanceSlider.value) / (pxToMeter * 100);
+      if (reposition) {
+        state.charge1.x = canvas.width / 2 - distPx / 2;
+        state.charge2.x = canvas.width / 2 + distPx / 2;
+        state.charge1.y = 220;
+        state.charge2.y = 220;
+      }
+      updateValueLabels();
+      updateReadouts();
+      draw();
+    }
+
+    function metersBetween(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y) * pxToMeter;
+    }
+
+    function computePairForceAbs() {
+      const q1 = Math.abs(state.q1MicroC) * 1e-6;
+      const q2 = Math.abs(state.q2MicroC) * 1e-6;
+      const r = metersBetween(state.charge1, state.charge2);
+      if (r === 0) return 0;
+      return k * q1 * q2 / (r * r);
+    }
+
+    function electricFieldFromCharge(chargeMicroC, chargePos, x, y) {
+      const q = chargeMicroC * 1e-6;
+      if (q === 0) return { x: 0, y: 0 };
+      const dx = (x - chargePos.x) * pxToMeter;
+      const dy = (y - chargePos.y) * pxToMeter;
+      const r2 = dx * dx + dy * dy;
+      const r = Math.sqrt(r2);
+      if (r < 0.03) return { x: 0, y: 0 };
+      const E = k * q / r2;
+      return { x: E * dx / r, y: E * dy / r };
+    }
+
+    function computeElectricFieldAt(x, y) {
+      const e1 = electricFieldFromCharge(state.q1MicroC, state.charge1, x, y);
+      const e2 = electricFieldFromCharge(state.q2MicroC, state.charge2, x, y);
+      return { x: e1.x + e2.x, y: e1.y + e2.y };
+    }
+
+    function updateReadouts() {
+      const F = computePairForceAbs();
+      const E = computeElectricFieldAt(state.testCharge.x, state.testCharge.y);
+      const Emag = Math.hypot(E.x, E.y);
+      const qt = state.testMicroC * 1e-6;
+      const Ft = Emag * qt;
+      const r = metersBetween(state.charge1, state.charge2);
+
+      forceValue.textContent = `${formatNumber(F)} N`;
+      fieldValue.textContent = `${formatSci(Emag)} N/C`;
+      testForceValue.textContent = `${formatNumber(Ft)} N`;
+      distanceMeters.textContent = `${r.toFixed(2)} m`;
+    }
+
+    function formatNumber(v) {
+      if (v === 0) return '0';
+      if (Math.abs(v) >= 1000 || Math.abs(v) < 0.01) return v.toExponential(2);
+      return v.toFixed(2);
+    }
+
+    function formatSci(v) {
+      if (v === 0) return '0';
+      if (Math.abs(v) >= 1000 || Math.abs(v) < 0.1) return v.toExponential(2);
+      return v.toFixed(2);
+    }
+
+    function drawArrow(x1, y1, x2, y2, color = '#1f8f5f', width = 3, head = 10) {
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawCharge(pos, qMicroC, label) {
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, chargeRadius, 0, Math.PI * 2);
+      ctx.fillStyle = qMicroC >= 0 ? '#d53b3b' : '#2f72dc';
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(qMicroC >= 0 ? '+' : '−', pos.x, pos.y + 1);
+
+      if (showLabels) {
+        ctx.fillStyle = '#203147';
+        ctx.font = 'bold 16px Arial';
+        ctx.fillText(`${label}: ${qMicroC >= 0 ? '+' : ''}${qMicroC.toFixed(1)} µC`, pos.x, pos.y - 36);
+      }
+    }
+
+    function drawRadialFieldHints(pos, qMicroC) {
+      if (qMicroC === 0) return;
+      const angles = [0, Math.PI/4, Math.PI/2, 3*Math.PI/4, Math.PI, 5*Math.PI/4, 3*Math.PI/2, 7*Math.PI/4];
+      angles.forEach(angle => {
+        const startR = 34;
+        const endR = 60;
+        const sx = pos.x + Math.cos(angle) * startR;
+        const sy = pos.y + Math.sin(angle) * startR;
+        const ex = pos.x + Math.cos(angle) * endR;
+        const ey = pos.y + Math.sin(angle) * endR;
+        if (qMicroC > 0) drawArrow(sx, sy, ex, ey, 'rgba(90,110,145,0.95)', 2.2, 9);
+        else drawArrow(ex, ey, sx, sy, 'rgba(90,110,145,0.95)', 2.2, 9);
+      });
+    }
+
+    function drawField() {
+      if (!showField) return;
+      for (let x = 50; x < canvas.width - 30; x += 58) {
+        for (let y = 50; y < canvas.height - 30; y += 48) {
+          const d1 = Math.hypot(x - state.charge1.x, y - state.charge1.y);
+          const d2 = Math.hypot(x - state.charge2.x, y - state.charge2.y);
+          if (d1 < 45 || d2 < 45) continue;
+          const E = computeElectricFieldAt(x, y);
+          const mag = Math.hypot(E.x, E.y);
+          if (mag < 60) continue;
+          const len = Math.min(30, Math.max(15, 420000 / (mag + 8000)));
+          const nx = E.x / mag;
+          const ny = E.y / mag;
+          drawArrow(x - nx * len * 0.45, y - ny * len * 0.45, x + nx * len * 0.55, y + ny * len * 0.55, 'rgba(90,110,145,0.82)', 1.8, 8);
+        }
+      }
+      drawRadialFieldHints(state.charge1, state.q1MicroC);
+      drawRadialFieldHints(state.charge2, state.q2MicroC);
+    }
+
+    function drawTestCharge() {
+      const p = state.testCharge;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#111111';
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      if (showLabels) {
+        ctx.fillStyle = '#111111';
+        ctx.font = 'bold 15px Arial';
+        ctx.fillText(`qₜ = +${state.testMicroC.toFixed(1)} µC`, p.x + 42, p.y - 14);
+      }
+
+      const E = computeElectricFieldAt(p.x, p.y);
+      const mag = Math.hypot(E.x, E.y);
+      if (mag > 0) {
+        const scale = Math.min(90, Math.max(28, mag / 10000));
+        drawArrow(p.x, p.y, p.x + (E.x / mag) * scale, p.y + (E.y / mag) * scale, '#1f8f5f', 3.6, 11);
+      }
+    }
+
+    function drawDistanceLine() {
+      const y = 355;
+      const x1 = state.charge1.x;
+      const x2 = state.charge2.x;
+      ctx.strokeStyle = '#7e8ca7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x1, y);
+      ctx.lineTo(x2, y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x1, y - 8); ctx.lineTo(x1, y + 8);
+      ctx.moveTo(x2, y - 8); ctx.lineTo(x2, y + 8);
+      ctx.stroke();
+      ctx.fillStyle = '#3a4e68';
+      ctx.font = 'bold 15px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(`r = ${(metersBetween(state.charge1, state.charge2)).toFixed(2)} m`, (x1 + x2) / 2, y - 14);
+    }
+
+    function drawForceBetweenCharges() {
+      if (state.q1MicroC === 0 || state.q2MicroC === 0) return;
+      const repulsive = Math.sign(state.q1MicroC) === Math.sign(state.q2MicroC);
+      const v = { x: state.charge2.x - state.charge1.x, y: state.charge2.y - state.charge1.y };
+      const len = Math.hypot(v.x, v.y) || 1;
+      const ux = v.x / len;
+      const uy = v.y / len;
+      const size = 50;
+      if (repulsive) {
+        drawArrow(state.charge1.x - ux * 8, state.charge1.y - uy * 8, state.charge1.x - ux * size, state.charge1.y - uy * size, '#7a35b5', 3.6, 11);
+        drawArrow(state.charge2.x + ux * 8, state.charge2.y + uy * 8, state.charge2.x + ux * size, state.charge2.y + uy * size, '#7a35b5', 3.6, 11);
+      } else {
+        drawArrow(state.charge1.x + ux * 8, state.charge1.y + uy * 8, state.charge1.x + ux * size, state.charge1.y + uy * size, '#7a35b5', 3.6, 11);
+        drawArrow(state.charge2.x - ux * 8, state.charge2.y - uy * 8, state.charge2.x - ux * size, state.charge2.y - uy * size, '#7a35b5', 3.6, 11);
+      }
+      ctx.fillStyle = '#6e2fa8';
+      ctx.font = 'bold 15px Arial';
+      ctx.fillText('Lilla nool = jõu suund', (state.charge1.x + state.charge2.x) / 2, 180);
+    }
+
+    function drawGraph() {
+      const w = graphCanvas.width;
+      const h = graphCanvas.height;
+      gctx.clearRect(0, 0, w, h);
+      gctx.fillStyle = '#fbfcff';
+      gctx.fillRect(0, 0, w, h);
+      gctx.strokeStyle = '#d7dfeb';
+      gctx.strokeRect(0, 0, w, h);
+
+      const padL = 70, padR = 30, padT = 22, padB = 42;
+      const plotW = w - padL - padR;
+      const plotH = h - padT - padB;
+
+      const q1 = Math.abs(state.q1MicroC) * 1e-6;
+      const q2 = Math.abs(state.q2MicroC) * 1e-6;
+      let maxF = 0;
+      const values = [];
+      for (let cm = 20; cm <= 240; cm += 2) {
+        const r = cm / 100;
+        const F = (q1 === 0 || q2 === 0) ? 0 : k * q1 * q2 / (r * r);
+        values.push({ cm, F });
+        if (F > maxF) maxF = F;
+      }
+      maxF = maxF || 1;
+
+      gctx.strokeStyle = '#93a4bf';
+      gctx.lineWidth = 1.5;
+      gctx.beginPath();
+      gctx.moveTo(padL, padT);
+      gctx.lineTo(padL, padT + plotH);
+      gctx.lineTo(padL + plotW, padT + plotH);
+      gctx.stroke();
+
+      gctx.fillStyle = '#41556f';
+      gctx.font = '15px Arial';
+      gctx.fillText('F (N)', 18, padT + 8);
+      gctx.fillText('r (cm)', padL + plotW - 20, padT + plotH + 30);
+
+      for (let i = 0; i <= 4; i++) {
+        const y = padT + plotH - (i / 4) * plotH;
+        gctx.strokeStyle = '#e4eaf4';
+        gctx.beginPath();
+        gctx.moveTo(padL, y);
+        gctx.lineTo(padL + plotW, y);
+        gctx.stroke();
+        gctx.fillStyle = '#617287';
+        gctx.fillText(formatNumber(maxF * i / 4), 8, y + 5);
+      }
+
+      for (let cm = 20; cm <= 240; cm += 40) {
+        const x = padL + ((cm - 20) / 220) * plotW;
+        gctx.strokeStyle = '#e4eaf4';
+        gctx.beginPath();
+        gctx.moveTo(x, padT);
+        gctx.lineTo(x, padT + plotH);
+        gctx.stroke();
+        gctx.fillStyle = '#617287';
+        gctx.fillText(String(cm), x - 10, padT + plotH + 20);
+      }
+
+      gctx.strokeStyle = '#2357d8';
+      gctx.lineWidth = 3;
+      gctx.beginPath();
+      values.forEach((p, i) => {
+        const x = padL + ((p.cm - 20) / 220) * plotW;
+        const y = padT + plotH - (p.F / maxF) * plotH;
+        if (i === 0) gctx.moveTo(x, y); else gctx.lineTo(x, y);
+      });
+      gctx.stroke();
+
+      const currentCm = metersBetween(state.charge1, state.charge2) * 100;
+      const currentF = computePairForceAbs();
+      const px = padL + ((currentCm - 20) / 220) * plotW;
+      const py = padT + plotH - (currentF / maxF) * plotH;
+      gctx.fillStyle = '#d64545';
+      gctx.beginPath();
+      gctx.arc(px, py, 6, 0, Math.PI * 2);
+      gctx.fill();
+      gctx.font = 'bold 14px Arial';
+      gctx.fillText(`Praegune punkt`, Math.min(px + 10, w - 110), Math.max(py - 10, 18));
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawField();
+      drawDistanceLine();
+      drawForceBetweenCharges();
+      drawCharge(state.charge1, state.q1MicroC, 'q₁');
+      drawCharge(state.charge2, state.q2MicroC, 'q₂');
+      drawTestCharge();
+      drawGraph();
+    }
+
+    function clamp(v, min, max) {
+      return Math.min(max, Math.max(min, v));
+    }
+
+    function getMousePos(evt) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (evt.clientX - rect.left) * (canvas.width / rect.width),
+        y: (evt.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      const m = getMousePos(e);
+      if (Math.hypot(m.x - state.charge1.x, m.y - state.charge1.y) <= chargeRadius + 4) dragging = 'q1';
+      else if (Math.hypot(m.x - state.charge2.x, m.y - state.charge2.y) <= chargeRadius + 4) dragging = 'q2';
+      else if (Math.hypot(m.x - state.testCharge.x, m.y - state.testCharge.y) <= 12) dragging = 'test';
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      const m = getMousePos(e);
+      if (dragging === 'q1') {
+        state.charge1.x = clamp(m.x, 60, state.charge2.x - 60);
+        state.charge1.y = clamp(m.y, 80, 300);
+      } else if (dragging === 'q2') {
+        state.charge2.x = clamp(m.x, state.charge1.x + 60, canvas.width - 60);
+        state.charge2.y = clamp(m.y, 80, 300);
+      } else if (dragging === 'test') {
+        state.testCharge.x = clamp(m.x, 20, canvas.width - 20);
+        state.testCharge.y = clamp(m.y, 20, canvas.height - 20);
+      }
+      const currentDistanceCm = metersBetween(state.charge1, state.charge2) * 100;
+      distanceSlider.value = clamp(currentDistanceCm, 20, 240).toFixed(0);
+      updateValueLabels();
+      updateReadouts();
+      draw();
+    });
+
+    window.addEventListener('mouseup', () => dragging = null);
+    canvas.addEventListener('mouseleave', () => dragging = null);
+
+    function applySetup({ q1, q2, distanceCm, testMicroC, testPos }) {
+      q1Slider.value = q1;
+      q2Slider.value = q2;
+      distanceSlider.value = distanceCm;
+      testChargeSlider.value = testMicroC;
+      syncStateFromControls(true);
+      if (testPos) {
+        state.testCharge.x = testPos.x;
+        state.testCharge.y = testPos.y;
+      }
+      updateReadouts();
+      draw();
+    }
+
+    function renderTasks() {
+      const list = document.getElementById('taskList');
+      list.innerHTML = '';
+      tasks.forEach((task, index) => {
+        const box = document.createElement('div');
+        box.className = `task-box ${index === activeTaskIndex ? 'active' : ''}`;
+        box.innerHTML = `
+          <div class="task-title"><span class="pill">${task.points} p</span>${task.title}</div>
+          <div>${task.prompt}</div>
+          <div class="mini-btn-row"><button class="secondary" data-task="${index}">Ava ülesanne</button></div>
+        `;
+        box.querySelector('button').addEventListener('click', () => {
+          activeTaskIndex = index;
+          loadActiveTask();
+        });
+        list.appendChild(box);
+      });
+    }
+
+    function loadActiveTask() {
+      renderTasks();
+      const task = tasks[activeTaskIndex];
+      task.setup();
+      answerInput.value = '';
+      answerUnit.textContent = `Ühik: ${task.unit}`;
+      feedbackBox.className = 'feedback';
+      feedbackBox.textContent = `Aktiivne ülesanne: ${task.title}\n${task.prompt}`;
+    }
+
+    function parseNumericInput(str) {
+      const normalized = String(str).trim().replace(',', '.');
+      const value = Number(normalized);
+      return Number.isFinite(value) ? value : null;
+    }
+
+    function nearlyEqual(user, actual, toleranceFraction = 0.03) {
+      if (actual === 0) return Math.abs(user) < 1e-9;
+      return Math.abs(user - actual) / Math.abs(actual) <= toleranceFraction;
+    }
+
+    function checkAnswer() {
+      const task = tasks[activeTaskIndex];
+      const raw = answerInput.value.trim();
+      attempts++;
+      attemptsValue.textContent = attempts;
+
+      if (!raw) {
+        feedbackBox.className = 'feedback bad';
+        feedbackBox.textContent = 'Vastus puudub. Sisesta vastus ja proovi uuesti.';
+        return;
+      }
+
+      let correct = false;
+      const actual = task.getAnswer();
+
+      if (task.type === 'numeric' || task.type === 'distance-check') {
+        const userVal = parseNumericInput(raw);
+        if (userVal === null) {
+          feedbackBox.className = 'feedback bad';
+          feedbackBox.textContent = 'See ei tundu olevat arvuline vastus.';
+          return;
+        }
+        correct = nearlyEqual(userVal, actual, task.tolerance || 0.03);
+      } else if (task.type === 'text') {
+        correct = raw.toLowerCase().trim() === String(actual).toLowerCase();
+      }
+
+      if (correct) {
+        const firstSolve = !solvedTasks.has(task.id);
+        if (firstSolve) {
+          solvedTasks.add(task.id);
+          solvedCount = solvedTasks.size;
+          score += task.points;
+          scoreValue.textContent = score;
+          solvedValue.textContent = `${solvedCount}/5`;
+        }
+        feedbackBox.className = 'feedback good';
+        feedbackBox.textContent = `Õige. ${firstSolve ? `Said ${task.points} punkti.` : 'See ülesanne oli juba varem lahendatud.'}`;
+      } else {
+        feedbackBox.className = 'feedback bad';
+        feedbackBox.textContent = task.type === 'text'
+          ? 'Praegu ei klapi. Mõtle, kas laengud on samanimelised või erinimelised.'
+          : `Praegu ei klapi. Kontrolli ühikuid, valemit ja kauguse ruutu.\nSinu vastus: ${raw} ${task.unit}`;
+      }
+    }
+
+    function showHint() {
+      const task = tasks[activeTaskIndex];
+      feedbackBox.className = 'feedback';
+      feedbackBox.textContent = `Vihje:\n${task.hint}`;
+    }
+
+    function showSolution() {
+      const task = tasks[activeTaskIndex];
+      feedbackBox.className = 'feedback';
+      feedbackBox.textContent = `Lahenduskäik:\n${task.solution()}`;
+    }
+
+    function nextTask() {
+      activeTaskIndex = (activeTaskIndex + 1) % tasks.length;
+      loadActiveTask();
+    }
+
+    function setMode(mode) {
+      state.mode = mode;
+      if (mode === 'explore') {
+        helpPanel.style.display = 'grid';
+        infoPanel.style.display = 'block';
+        document.querySelectorAll('.hidden-in-test').forEach(el => el.style.visibility = 'visible');
+        modeLabel.textContent = 'Avastus';
+      } else if (mode === 'practice') {
+        helpPanel.style.display = 'grid';
+        infoPanel.style.display = 'block';
+        document.querySelectorAll('.hidden-in-test').forEach(el => el.style.visibility = 'visible');
+        modeLabel.textContent = 'Harjutus';
+      } else {
+        helpPanel.style.display = 'none';
+        infoPanel.style.display = 'none';
+        document.querySelectorAll('.hidden-in-test').forEach(el => {
+          if (el.id !== 'helpPanel' && el.id !== 'infoPanel') el.style.visibility = 'hidden';
+        });
+        modeLabel.textContent = 'Test';
+      }
+    }
+
+    q1Slider.addEventListener('input', () => syncStateFromControls(true));
+    q2Slider.addEventListener('input', () => syncStateFromControls(true));
+    distanceSlider.addEventListener('input', () => syncStateFromControls(true));
+    testChargeSlider.addEventListener('input', () => syncStateFromControls(false));
+    modeSelect.addEventListener('change', (e) => setMode(e.target.value));
+
+    document.getElementById('toggleFieldBtn').addEventListener('click', () => {
+      showField = !showField;
+      document.getElementById('toggleFieldBtn').textContent = showField ? 'Peida väljajooned' : 'Näita väljajooni';
+      draw();
+    });
+
+    document.getElementById('toggleLabelsBtn').addEventListener('click', () => {
+      showLabels = !showLabels;
+      document.getElementById('toggleLabelsBtn').textContent = showLabels ? 'Peida sildid' : 'Näita silte';
+      draw();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      score = 0;
+      attempts = 0;
+      solvedTasks.clear();
+      solvedCount = 0;
+      scoreValue.textContent = '0';
+      attemptsValue.textContent = '0';
+      solvedValue.textContent = '0/5';
+      activeTaskIndex = 0;
+      modeSelect.value = 'explore';
+      setMode('explore');
+      loadActiveTask();
+    });
+
+    document.getElementById('placeTestChargeBtn').addEventListener('click', () => {
+      state.testCharge.x = canvas.width / 2;
+      state.testCharge.y = 220;
+      updateReadouts();
+      draw();
+    });
+
+    document.getElementById('snapTaskBtn').addEventListener('click', () => loadActiveTask());
+    document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+    document.getElementById('hintBtn').addEventListener('click', showHint);
+    document.getElementById('solutionBtn').addEventListener('click', showSolution);
+    document.getElementById('nextBtn').addEventListener('click', nextTask);
+
+    answerInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') checkAnswer();
+    });
+
+    setMode('explore');
+    renderTasks();
+    loadActiveTask();
+    syncStateFromControls(true);
+  </script>
+</body>
+</html>

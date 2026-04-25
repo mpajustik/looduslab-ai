@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LoodusLab AI</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="hero">
+  <nav class="topbar">
+    <div class="logo">LoodusLab AI</div>
+    <a href="docs/opetaja-juhend.html" class="nav-link">Õpetaja juhend</a>
+  </nav>
+
+  <section class="hero-content">
+    <p class="eyebrow">TI-Hüppe konkursitöö</p>
+    <h1>Interaktiivsed loodusteaduste simulatsioonid 7.–12. klassile</h1>
+    <p class="hero-text">
+      Eestikeelne simulatsioonide kogumik füüsika ja keemia õppimiseks.
+      Materjal toetab uurimuslikku õpet, graafikute mõistmist, arvutusülesandeid
+      ja õpetaja töö lihtsustamist.
+    </p>
+
+    <div class="hero-actions">
+      <a href="#simulatsioonid" class="btn primary">Vaata simulatsioone</a>
+      <a href="docs/opetaja-juhend.html" class="btn secondary">Ava õpetaja juhend</a>
+    </div>
+  </section>
+</header>
+
+<main>
+
+  <section class="intro">
+    <div class="intro-card">
+      <h2>Õpilasele</h2>
+      <p>Uuri nähtusi, muuda suurusi, loe graafikuid ja kontrolli oma arusaamist.</p>
+    </div>
+    <div class="intro-card">
+      <h2>Õpetajale</h2>
+      <p>Kasuta simulatsioone teema avamiseks, harjutamiseks, kordamiseks või iseseisvaks tööks.</p>
+    </div>
+    <div class="intro-card">
+      <h2>AI kasutamine</h2>
+      <p>Iga simulatsiooni juurde saab lisada AI-promptid selgituste, ülesannete ja tagasiside loomiseks.</p>
+    </div>
+  </section>
+
+  <section id="simulatsioonid" class="sim-section">
+    <div class="section-heading">
+      <p class="eyebrow">Simulatsioonide kogu</p>
+      <h2>Vali õppimiseks sobiv simulatsioon</h2>
+      <p>
+        Otsi teema, klassi, aine või märksõna järgi. Esimeses versioonis on kogumikus 9 interaktiivset simulatsiooni.
+      </p>
+    </div>
+
+    <div class="controls">
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Otsi: tihedus, pH, rõhk, võnkumine, elekter..."
+      />
+
+      <div class="filters">
+        <button class="filter-btn active" data-filter="all">Kõik</button>
+        <button class="filter-btn" data-filter="7-8">7.–8. klass</button>
+        <button class="filter-btn" data-filter="9">9. klass</button>
+        <button class="filter-btn" data-filter="gym">Gümnaasium</button>
+      </div>
+    </div>
+
+    <div class="cards" id="simulationCards">
+
+  <article class="sim-card" data-grade="gym" data-search="ampere seadus elektromagnetism kaks juhet vool jõud füüsika gümnaasium 11 12 klass">
+    <div class="card-top">
+      <span class="badge">Gümnaasium</span>
+      <span class="subject">Füüsika</span>
+    </div>
+    <h3>Ampère’i seadus</h3>
+    <p>Õpilane uurib kahe vooluga juhtme vastastikmõju ning jõu sõltuvust voolust, pikkusest ja kaugusest.</p>
+    <div class="tags"><span>elektromagnetism</span><span>vool</span><span>jõud</span></div>
+    <div class="card-actions">
+      <a href="simulations/ampere-seadus.html" class="btn small primary">Ava simulatsioon</a>
+      <a href="docs/opetaja-juhend.html#ampere" class="btn small secondary">Juhend</a>
+    </div>
+  </article>
+
+  <article class="sim-card" data-grade="gym" data-search="elektriväli elektrivali laeng elektrijõud väli füüsika gümnaasium 11 12 klass">
+    <div class="card-top">
+      <span class="badge">Gümnaasium</span>
+      <span class="subject">Füüsika</span>
+    </div>
+    <h3>Elektriväli</h3>
+    <p>Õpilane uurib elektrilaengute mõju, elektrivälja tugevust ja jõujoonte kujunemist.</p>
+    <div class="tags"><span>elektriväli</span><span>laeng</span><span>jõud</span></div>
+    <div class="card-actions">
+      <a href="simulations/elektrivali.html" class="btn small primary">Ava simulatsioon</a>
+      <a href="docs/opetaja-juhend.html#elektrivali" class="btn small secondary">Juhend</a>
+    </div>
+  </article>
+
+  <article class="sim-card" data-grade="gym" data-search="harmooniline võnkumine periood sagedus amplituud füüsika gümnaasium 10 11 klass graafik">
+    <div class="card-top">
+      <span class="badge">Gümnaasium</span>
+      <span class="subject">Füüsika</span>
+    </div>
+    <h3>Harmooniline võnkumine</h3>
+    <p>Õpilane muudab amplituudi, sagedust ja perioodi ning jälgib võnkumist ja selle graafikut.</p>
+    <div class="tags"><span>võnkumine</span><span>graafik</span><span>mudeldamine</span></div>
+    <div class="card-actions">
+      <a href="simulations/harmooniline-vonkumine.html" class="btn small primary">Ava simulatsioon</a>
+      <a href="docs/opetaja-juhend.html#vonkumine" class="btn small secondary">Juhend</a>
+    </div>
+  </article>
+
+  <article class="sim-card" data-grade="gym" data-search="kolvisüsteem kolvisysteem gaas rõhk ruumala temperatuur energia füüsika gümnaasium">
+    <div class="card-top">
+      <span class="badge">Gümnaasium</span>
+      <span class="subject">Füüsika</span>
+    </div>
+    <h3>Kolvisüsteem</h3>
+    <p>Õpilane uurib gaasi rõhu, ruumala ja temperatuuri seoseid kolvisüsteemi mudeli abil.</p>
+    <div class="tags"><span>gaas</span><span>rõhk</span><span>ruumala</span></div>
+    <div class="card-actions">
+      <a href="simulations/kolvisysteem.html" class="btn small primary">Ava simulatsioon</a>
+      <a href="docs/opetaja-juhend.html#kolvisysteem" class="btn small secondary">Juhend</a>
+    </div>
+  </article>
+
+  <article class="sim-card" data-grade="7-8" data-search="magnet magnetväli püsimagnet poolus põhja lõuna füüsika 8 9 klass">
+    <div class="card-top">
+      <span class="badge">8.–9. klass</span>
+      <span class="subject">Füüsika</span>
+    </div>
+    <h3>Magnet</h3>
+    <p>Õpilane uurib magnetvälja, magneti pooluseid ja magnetilise vastastikmõju suunda.</p>
+    <div class="tags"><span>magnetväli</span><span>poolused</span><span>jõujooned</span></div>
+    <div class="card-actions">
+      <a href="simulations/magnet.html" class="btn small primary">Ava simulatsioon</a>
+      <a href="docs/opetaja-juhend.html#magnet" class="btn small secondary">Juhend</a>
+    </div>
+  </article>
+
+  <article class="sim-card" data-grade="9" data-search="ph labor happed alused aluseline happeline neutraalne keemia 8 9 klass">
+    <div class="card-top">
+      <span class="badge">8.–9. klass</span>
+      <span class="subject">Keemia</span>
+    </div>
+    <h3>pH labor</h3>
+    <p>Õpilane määrab ainete pH, eristab happelisi, neutraalseid ja aluselisi lahuseid ning kontrollib teadmisi.</p>
+    <div class="tags"><span>pH</span><span>happed</span><span>alused</span></div>
+    <div class="card-actions">
+      <a href="simulations/ph-labor.html" class="btn small primary">Ava simulatsioon</a>
+      <a href="docs/opetaja-juhend.html#ph" class="btn small secondary">Juhend</a>
+    </div>
+  </article>
+
+  <article class="sim-card" data-grade="gym" data-search="ringliikumise dünaamika ringliikumine kesktõmbejõud nurkkiirus joonkiirus füüsika gümnaasium">
+    <div class="card-top">
+      <span class="badge">Gümnaasium</span>
+      <span class="subject">Füüsika</span>
+    </div>
+    <h3>Ringliikumise dünaamika</h3>
+    <p>Õpilane uurib ringliikumist, kesktõmbejõudu, joonkiirust, nurkkiirust ja raadiuse mõju liikumisele.</p>
+    <div class="tags"><span>ringliikumine</span><span>jõud</span><span>kiirus</span></div>
+    <div class="card-actions">
+      <a href="simulations/ringliikumisedunaamika.html" class="btn small primary">Ava simulatsioon</a>
+      <a href="docs/opetaja-juhend.html#ringliikumine" class="btn small secondary">Juhend</a>
+    </div>
+  </article>
+
+  <article class="sim-card" data-grade="gym" data-search="solar panels päikesepaneel päikeseenergia taastuvenergia energia füüsika geograafia gümnaasium">
+    <div class="card-top">
+      <span class="badge">Gümnaasium</span>
+      <span class="subject">Füüsika / geograafia</span>
+    </div>
+    <h3>Päikesepaneelide mudel</h3>
+    <p>Õpilane uurib, kuidas valguse intensiivsus, paneeli nurk ja kasutegur mõjutavad elektrienergia tootmist.</p>
+    <div class="tags"><span>energia</span><span>päikesepaneel</span><span>mudel</span></div>
+    <div class="card-actions">
+      <a href="simulations/solarpanels.html" class="btn small primary">Ava simulatsioon</a>
+      <a href="docs/opetaja-juhend.html#solarpanels" class="btn small secondary">Juhend</a>
+    </div>
+  </article>
+
+  <article class="sim-card" data-grade="7-8" data-search="vedeliku rõhk rõhk vedelikes sügavus tihedus füüsika 8 klass graafik">
+    <div class="card-top">
+      <span class="badge">8. klass</span>
+      <span class="subject">Füüsika</span>
+    </div>
+    <h3>Vedeliku rõhk</h3>
+    <p>Õpilane uurib, kuidas vedeliku rõhk sõltub sügavusest, vedeliku tihedusest ja raskuskiirendusest.</p>
+    <div class="tags"><span>rõhk</span><span>vedelik</span><span>graafik</span></div>
+    <div class="card-actions">
+      <a href="simulations/vedeliku-rohk.html" class="btn small primary">Ava simulatsioon</a>
+      <a href="docs/opetaja-juhend.html#rohk" class="btn small secondary">Juhend</a>
+    </div>
+  </article>
+
+</div>
+
+    <p id="noResults" class="no-results hidden">Ühtegi simulatsiooni ei leitud.</p>
+  </section>
+
+  <section class="teacher-box">
+    <div>
+      <p class="eyebrow">Õpetaja töö lihtsustamine</p>
+      <h2>Üks juhend kogu kogumikule</h2>
+      <p>
+        Õpetaja juhendis on kasutussoovitused, õpitulemused, näidisküsimused,
+        AI-promptid ja ideed diferentseerimiseks.
+      </p>
+    </div>
+    <a href="docs/opetaja-juhend.html" class="btn primary">Ava õpetaja juhend</a>
+  </section>
+
+</main>
+
+<footer>
+  <p>LoodusLab AI · 7.–12. klassi loodusteaduste simulatsioonide kogumik</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

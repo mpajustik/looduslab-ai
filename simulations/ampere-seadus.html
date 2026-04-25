@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ampère'i jõud – kahe vooluga juhtme simulatsioon</title>
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --text:#16202a;
+      --muted:#5b6775;
+      --line:#d9e1ea;
+      --accent:#1f6feb;
+      --accent2:#0a884a;
+      --accent3:#ea580c;
+      --violet:#7c3aed;
+      --warn:#c2410c;
+      --shadow:0 10px 24px rgba(16,24,40,.08);
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+    body{padding:18px}
+    .app{
+      max-width:1580px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:340px minmax(520px, 1fr) 390px;
+      gap:16px;
+      align-items:start;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:16px;
+    }
+    .header{grid-column:1 / -1;padding:18px 20px}
+    h1{margin:0 0 8px 0;font-size:32px}
+    h2{margin:0 0 12px 0;font-size:22px}
+    h3{margin:0 0 10px 0;font-size:18px}
+    p{margin:0 0 10px 0;line-height:1.45}
+    .muted{color:var(--muted)}
+    .small{font-size:13px}
+    .formula{
+      font-family:"Trebuchet MS", Arial, sans-serif;
+      font-size:26px;
+      font-weight:700;
+      margin:10px 0 4px;
+      letter-spacing:.3px;
+    }
+    .quick-rules{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:12px;
+    }
+    .pill{
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:8px 12px;
+      font-weight:700;
+      background:#fbfcfe;
+    }
+    .controls .group{margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+    .controls .group:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+    label{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      font-weight:700;
+      margin-bottom:8px;
+    }
+    .value{
+      color:var(--accent);
+      min-width:88px;
+      text-align:right;
+      font-weight:700;
+    }
+    input[type="range"]{
+      width:100%;
+      margin:4px 0 0;
+      accent-color:var(--accent);
+      cursor:pointer;
+    }
+    .seg, .mode-row, .toggle-row, .bottom-actions{
+      display:grid;
+      gap:8px;
+    }
+    .seg{grid-template-columns:1fr 1fr}
+    .mode-row{grid-template-columns:1fr 1fr}
+    .toggle-row{grid-template-columns:1fr 1fr}
+    .bottom-actions{grid-template-columns:1fr 1fr 1fr}
+    button{
+      border:none;
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:15px;
+      font-weight:700;
+      cursor:pointer;
+      background:#e9eef7;
+      color:var(--text);
+    }
+    button.primary{background:var(--accent);color:white}
+    button.good{background:var(--accent2);color:white}
+    button.warn{background:#f97316;color:white}
+    button.ghost{background:#f4f7fb;border:1px solid var(--line)}
+    button.active{outline:3px solid rgba(31,111,235,.16)}
+    .sim-wrap{padding:14px}
+    .status-strip{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:10px;
+      margin-bottom:12px;
+    }
+    .stat{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px 12px;
+      background:#fbfdff;
+    }
+    .stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+    .stat .v{font-size:22px;font-weight:700;margin-top:4px}
+    .sim-stage{
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:linear-gradient(180deg,#fbfdff 0%, #f5f8fd 100%);
+      overflow:hidden;
+      position:relative;
+    }
+    svg{display:block;width:100%;height:auto}
+    .legend{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:10px;
+      font-size:14px;
+    }
+    .legend span{display:flex;align-items:center;gap:8px;color:var(--muted)}
+    .swatch{width:14px;height:14px;border-radius:50%;display:inline-block}
+    .right .box,.below .box{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      margin-bottom:12px;
+      background:#fbfdff;
+    }
+    .big-result{
+      font-size:28px;
+      font-weight:800;
+      color:var(--accent);
+      margin-top:4px;
+    }
+    .interaction{
+      font-size:20px;
+      font-weight:800;
+      margin-top:6px;
+    }
+    .calc{
+      font-family:Consolas, "Courier New", monospace;
+      line-height:1.55;
+      white-space:pre-wrap;
+      font-size:14px;
+      background:#f7fafc;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+    }
+    .task-title{font-weight:800;margin-bottom:8px}
+    .task-input{
+      width:100%;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      font-size:16px;
+      margin:8px 0 10px;
+    }
+    .feedback{
+      min-height:44px;
+      border-radius:12px;
+      padding:10px 12px;
+      background:#f7fafc;
+      border:1px solid var(--line);
+      font-weight:700;
+      margin-top:10px;
+    }
+    .below{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .chart-card{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      background:white;
+    }
+    .chart-title{font-weight:800;margin-bottom:8px}
+    canvas{
+      width:100%;
+      height:240px;
+      display:block;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:white;
+    }
+    .example{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:white;
+      margin-bottom:10px;
+    }
+    .example:last-child{margin-bottom:0}
+    .example h4{margin:0 0 8px 0;font-size:16px}
+    .example .solution{
+      margin-top:8px;
+      padding:10px;
+      border-radius:10px;
+      background:#f7fafc;
+      border:1px solid var(--line);
+      font-family:Consolas, "Courier New", monospace;
+      white-space:pre-wrap;
+      line-height:1.45;
+      font-size:13px;
+    }
+    .footer-note{grid-column:1 / -1;font-size:14px;color:var(--muted);padding:4px 6px 10px}
+    @media (max-width: 1300px){
+      .app{grid-template-columns:1fr}
+      .below{grid-template-columns:1fr}
+      .status-strip{grid-template-columns:repeat(2,1fr)}
+    }
+    @media (max-width: 760px){
+      body{padding:10px}
+      h1{font-size:26px}
+      .status-strip,.bottom-actions,.mode-row,.toggle-row,.seg,.charts-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="card header">
+      <h1>Ampère'i jõud kahe paralleelse vooluga juhtme vahel</h1>
+      <p class="muted">
+        Simulatsioon 11. klassile. Muuda voolutugevusi, juhtmete vahekaugust ja paralleelset pikkust ning jälgi,
+        kuidas muutub juhtmete vaheline jõud ja kas juhtmed tõmbuvad või tõukuvad.
+      </p>
+      <div class="formula">F = K · I₁ · I₂ · l / r</div>
+      <div class="quick-rules">
+        <div class="pill">Samasuunalised voolud → juhtmed tõmbuvad</div>
+        <div class="pill">Vastassuunalised voolud → juhtmed tõukuvad</div>
+        <div class="pill">Suurem vool, pikem juhe, väiksem kaugus → suurem jõud</div>
+      </div>
+    </section>
+
+    <section class="card controls">
+      <h2>Juhtpaneel</h2>
+
+      <div class="group">
+        <label for="i1">Vool I₁ <span class="value" id="i1Val">3.0 A</span></label>
+        <input id="i1" type="range" min="0" max="10" step="0.1" value="3.0">
+
+        <label for="i2" style="margin-top:12px;">Vool I₂ <span class="value" id="i2Val">3.0 A</span></label>
+        <input id="i2" type="range" min="0" max="10" step="0.1" value="3.0">
+
+        <div class="seg">
+          <button id="dir1Btn" class="primary">I₁ suund: ↑ üles</button>
+          <button id="dir2Btn" class="primary">I₂ suund: ↑ üles</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <label for="r">Juhtmete vahekaugus r <span class="value" id="rVal">0.050 m</span></label>
+        <input id="r" type="range" min="0.01" max="0.2" step="0.005" value="0.05">
+
+        <label for="l" style="margin-top:12px;">Paralleelse osa pikkus l <span class="value" id="lVal">1.00 m</span></label>
+        <input id="l" type="range" min="0.2" max="5" step="0.1" value="1.0">
+      </div>
+
+      <div class="group">
+        <h3>Kiirseaded</h3>
+        <div class="seg">
+          <button id="sameDirBtn" class="ghost">Samasuunalised</button>
+          <button id="oppositeDirBtn" class="ghost">Vastassuunalised</button>
+          <button id="equalCurrentsBtn" class="ghost">Võrdsed voolud</button>
+          <button id="smallDistanceBtn" class="ghost">Väike kaugus</button>
+          <button id="largeDistanceBtn" class="ghost">Suur kaugus</button>
+          <button id="resetBtn" class="warn">Taasta algseis</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Vaated</h3>
+        <div class="mode-row">
+          <button id="studentModeBtn" class="good active">Õpilasrežiim</button>
+          <button id="teacherModeBtn" class="ghost">Õpetajarežiim</button>
+        </div>
+        <div class="toggle-row" style="margin-top:8px;">
+          <button id="fieldToggleBtn" class="ghost active">Magnetväli sees</button>
+          <button id="calcToggleBtn" class="ghost active">Arvutuskäik sees</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h3>Graafiku valik</h3>
+        <div class="seg">
+          <button id="graphModeR" class="good active">F sõltuvus r-st</button>
+          <button id="graphModeI" class="ghost">F sõltuvus I₁-st</button>
+        </div>
+        <p class="small muted" style="margin-top:10px;">
+          Vasak graafik näitab hetkevaliku põhjal sõltuvust. Paremal on võrdlusgraafik F sõltuvusest l-st.
+        </p>
+      </div>
+
+      <div class="group">
+        <h3>Kiired mõtteküsimused</h3>
+        <p class="small muted">Enne liuguri muutmist püüa vastus ennustada.</p>
+        <p>1. Mis juhtub jõuga, kui kaugus <strong>väheneb 2 korda</strong>?</p>
+        <p>2. Mis juhtub jõuga, kui <strong>mõlemad voolud kahekordistuvad</strong>?</p>
+        <p>3. Kas nullvoolu korral on juhtmete vahel vastastikmõju?</p>
+      </div>
+    </section>
+
+    <section class="card sim-wrap">
+      <div class="status-strip">
+        <div class="stat">
+          <div class="k">Jõud F</div>
+          <div class="v" id="forceBig">3.60 × 10⁻⁵ N</div>
+        </div>
+        <div class="stat">
+          <div class="k">Mõju liik</div>
+          <div class="v" id="interactionBig">TÕMBUVAD</div>
+        </div>
+        <div class="stat">
+          <div class="k">Vasak juhe</div>
+          <div class="v" id="wire1Big">↑ 3.0 A</div>
+        </div>
+        <div class="stat">
+          <div class="k">Parem juhe</div>
+          <div class="v" id="wire2Big">↑ 3.0 A</div>
+        </div>
+      </div>
+
+      <div class="sim-stage">
+        <svg id="simSvg" viewBox="0 0 900 560" aria-label="Kahe vooluga juhtme simulatsioon">
+          <defs>
+            <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L10,5 L0,10 z" fill="#1f6feb"></path>
+            </marker>
+            <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L10,5 L0,10 z" fill="#ea580c"></path>
+            </marker>
+            <marker id="arrowGray" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L10,5 L0,10 z" fill="#64748b"></path>
+            </marker>
+          </defs>
+
+          <rect x="0" y="0" width="900" height="560" fill="transparent"></rect>
+
+          <g id="fieldLayer"></g>
+
+          <line id="distanceLine" x1="350" y1="480" x2="550" y2="480" stroke="#64748b" stroke-width="2" stroke-dasharray="7 7" marker-start="url(#arrowGray)" marker-end="url(#arrowGray)"></line>
+          <text id="distanceText" x="450" y="468" text-anchor="middle" font-size="22" fill="#475569" font-weight="700">r = 0.050 m</text>
+
+          <g id="wire1Group">
+            <line id="wire1" x1="350" y1="90" x2="350" y2="430" stroke="#1f6feb" stroke-width="12" stroke-linecap="round"></line>
+            <line id="current1Arrow" x1="320" y1="290" x2="320" y2="210" stroke="#1f6feb" stroke-width="6" marker-end="url(#arrowBlue)"></line>
+            <text id="wire1Label" x="292" y="192" font-size="26" font-weight="800" fill="#1f6feb">I₁ = 3.0 A</text>
+          </g>
+
+          <g id="wire2Group">
+            <line id="wire2" x1="550" y1="90" x2="550" y2="430" stroke="#0a884a" stroke-width="12" stroke-linecap="round"></line>
+            <line id="current2Arrow" x1="580" y1="290" x2="580" y2="210" stroke="#0a884a" stroke-width="6" marker-end="url(#arrowGray)"></line>
+            <text id="wire2Label" x="598" y="192" font-size="26" font-weight="800" fill="#0a884a">I₂ = 3.0 A</text>
+          </g>
+
+          <g id="forceLayer">
+            <line id="force1" x1="310" y1="260" x2="360" y2="260" stroke="#ea580c" stroke-width="8" marker-end="url(#arrowOrange)"></line>
+            <line id="force2" x1="590" y1="260" x2="540" y2="260" stroke="#ea580c" stroke-width="8" marker-end="url(#arrowOrange)"></line>
+            <text id="f1Label" x="280" y="250" font-size="20" font-weight="800" fill="#ea580c">F</text>
+            <text id="f2Label" x="610" y="250" font-size="20" font-weight="800" fill="#ea580c">F</text>
+          </g>
+
+          <text id="centerResult" x="450" y="65" text-anchor="middle" font-size="34" font-weight="900" fill="#111827">TÕMBUVAD</text>
+          <text id="centerForce" x="450" y="102" text-anchor="middle" font-size="24" font-weight="700" fill="#1f6feb">F = 3.60 × 10⁻⁵ N</text>
+
+          <text x="450" y="530" text-anchor="middle" font-size="18" fill="#64748b">Muuda väärtusi vasakul ja jälgi, kuidas muutub jõud ning suund.</text>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <span><i class="swatch" style="background:#1f6feb"></i> Vasak juhe ja selle voolusuund</span>
+        <span><i class="swatch" style="background:#0a884a"></i> Parem juhe ja selle voolusuund</span>
+        <span><i class="swatch" style="background:#ea580c"></i> Ampère'i jõu suund</span>
+        <span><i class="swatch" style="background:#94a3b8"></i> Juhtmete vahekaugus r</span>
+      </div>
+    </section>
+
+    <section class="card right">
+      <h2>Tulemused ja ülesanded</h2>
+
+      <div class="box">
+        <div class="muted">Hetkeolukord</div>
+        <div class="big-result" id="forceReadout">3.60 × 10⁻⁵ N</div>
+        <div class="interaction" id="interactionReadout">Juhtmed tõmbuvad.</div>
+        <p class="small muted" id="explainReadout">
+          Samasuunaliste voolude korral on juhtmete vaheline jõud suunatud teineteise poole.
+        </p>
+      </div>
+
+      <div class="box" id="calculationBox">
+        <div class="task-title">Arvutuskäik</div>
+        <div id="calcText" class="calc"></div>
+      </div>
+
+      <div class="box">
+        <div class="task-title">Harjutus</div>
+        <div id="taskText">Laadimine...</div>
+        <input id="taskAnswer" class="task-input" type="text" placeholder="Sisesta vastus siia">
+        <div class="bottom-actions">
+          <button id="checkAnswerBtn" class="primary">Kontrolli</button>
+          <button id="showAnswerBtn" class="ghost">Näita vastust</button>
+          <button id="nextTaskBtn" class="good">Järgmine</button>
+        </div>
+        <div id="feedback" class="feedback">Alusta ülesandega ja kontrolli oma vastust.</div>
+      </div>
+
+      <div class="box">
+        <div class="task-title">Mida peab teadma</div>
+        <p><strong>Kontrollitav fakt:</strong> samasuunalised voolud tõmbuvad, vastassuunalised tõukuvad.</p>
+        <p><strong>Kontrollitav fakt:</strong> jõud kasvab, kui voolud suurenevad või kui juhtmed tuuakse lähemale.</p>
+        <p><strong>Tõlgendus:</strong> simulatsiooni nähtav nihe on suurendatud, et väga väikesed jõud oleksid ekraanil arusaadavad.</p>
+      </div>
+    </section>
+
+    <section class="below">
+      <div class="card">
+        <h2>Graafikud</h2>
+        <div class="charts-grid">
+          <div class="chart-card">
+            <div class="chart-title" id="chart1Title">F sõltuvus vahekaugusest r</div>
+            <canvas id="chart1" width="560" height="260"></canvas>
+            <p class="small muted" id="chart1Caption">Punane punkt näitab hetkevalikut.</p>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">F sõltuvus pikkusest l</div>
+            <canvas id="chart2" width="560" height="260"></canvas>
+            <p class="small muted">Siin on näha, et pikkuse suurenedes kasvab jõud võrdeliselt.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Arvutusülesanded koos näidislahendustega</h2>
+
+        <div class="example">
+          <h4>Ülesanne 1. Leia jõud</h4>
+          <p>Kaks paralleelset juhet on üksteisest 0,05 m kaugusel. Esimeses juhtmes on vool 2 A, teises 3 A. Juhtmete paralleelse osa pikkus on 1,5 m. Leia juhtmete vaheline jõud.</p>
+          <div class="solution">F = K · I₁ · I₂ · l / r
+F = 2×10⁻⁷ · 2 · 3 · 1,5 / 0,05
+F = 2×10⁻⁷ · 9 / 0,05
+F = 3,6×10⁻⁵ N
+
+Vastus: F = 3,6×10⁻⁵ N</div>
+        </div>
+
+        <div class="example">
+          <h4>Ülesanne 2. Määra mõju liik</h4>
+          <p>Mõlemas juhtmes on vool ülespoole. Kas juhtmed tõmbuvad või tõukuvad?</p>
+          <div class="solution">Voolud on samasuunalised.
+Samasuunaliste voolude korral juhtmed tõmbuvad.
+
+Vastus: juhtmed tõmbuvad</div>
+        </div>
+
+        <div class="example">
+          <h4>Ülesanne 3. Kauguse mõju</h4>
+          <p>Kui juhtmete vahekaugus väheneb 2 korda, aga voolud ja pikkus jäävad samaks, kuidas muutub jõud?</p>
+          <div class="solution">Valemis on r nimetajas:
+F = K · I₁ · I₂ · l / r
+
+Kui r väheneb 2 korda, siis jagame väiksema arvuga.
+Seega jõud suureneb 2 korda.
+
+Vastus: jõud kahekordistub</div>
+        </div>
+
+        <div class="example">
+          <h4>Ülesanne 4. Mõlema voolu muutmine</h4>
+          <p>Kui mõlemad voolud kahekordistuvad, kuidas muutub jõud?</p>
+          <div class="solution">Jõud sõltub korrutisest I₁ · I₂.
+Kui I₁ → 2I₁ ja I₂ → 2I₂, siis
+
+uus korrutis = (2I₁)(2I₂) = 4I₁I₂
+
+Seega jõud suureneb 4 korda.
+
+Vastus: jõud suureneb 4 korda</div>
+        </div>
+
+        <div class="example">
+          <h4>Ülesanne 5. Leia puuduv pikkus</h4>
+          <p>Jõud on 8×10⁻⁵ N, voolud on 4 A ja 5 A, juhtmete vahekaugus on 0,10 m. Leia paralleelse osa pikkus.</p>
+          <div class="solution">Alustame valemist:
+F = K · I₁ · I₂ · l / r
+
+Avaldame l:
+l = F · r / (K · I₁ · I₂)
+
+Asendus:
+l = (8×10⁻⁵ · 0,10) / (2×10⁻⁷ · 4 · 5)
+l = 8×10⁻⁶ / 4×10⁻⁶
+l = 2
+
+Vastus: l = 2 m</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer-note">
+      Ühefaililine HTML + CSS + JS simulatsioon. Sobib avamiseks brauseris ka ilma internetita.
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      i1: 3.0,
+      i2: 3.0,
+      dir1: 1,
+      dir2: 1,
+      r: 0.05,
+      l: 1.0,
+      k: 2e-7,
+      showField: true,
+      showCalculation: true,
+      mode: "student",
+      graphMode: "r",
+      taskIndex: 0
+    };
+
+    const els = {
+      i1: document.getElementById("i1"),
+      i2: document.getElementById("i2"),
+      r: document.getElementById("r"),
+      l: document.getElementById("l"),
+      i1Val: document.getElementById("i1Val"),
+      i2Val: document.getElementById("i2Val"),
+      rVal: document.getElementById("rVal"),
+      lVal: document.getElementById("lVal"),
+      dir1Btn: document.getElementById("dir1Btn"),
+      dir2Btn: document.getElementById("dir2Btn"),
+      fieldToggleBtn: document.getElementById("fieldToggleBtn"),
+      calcToggleBtn: document.getElementById("calcToggleBtn"),
+      studentModeBtn: document.getElementById("studentModeBtn"),
+      teacherModeBtn: document.getElementById("teacherModeBtn"),
+      graphModeR: document.getElementById("graphModeR"),
+      graphModeI: document.getElementById("graphModeI"),
+      forceBig: document.getElementById("forceBig"),
+      interactionBig: document.getElementById("interactionBig"),
+      wire1Big: document.getElementById("wire1Big"),
+      wire2Big: document.getElementById("wire2Big"),
+      forceReadout: document.getElementById("forceReadout"),
+      interactionReadout: document.getElementById("interactionReadout"),
+      explainReadout: document.getElementById("explainReadout"),
+      calcText: document.getElementById("calcText"),
+      calculationBox: document.getElementById("calculationBox"),
+      fieldLayer: document.getElementById("fieldLayer"),
+      wire1: document.getElementById("wire1"),
+      wire2: document.getElementById("wire2"),
+      current1Arrow: document.getElementById("current1Arrow"),
+      current2Arrow: document.getElementById("current2Arrow"),
+      force1: document.getElementById("force1"),
+      force2: document.getElementById("force2"),
+      f1Label: document.getElementById("f1Label"),
+      f2Label: document.getElementById("f2Label"),
+      wire1Label: document.getElementById("wire1Label"),
+      wire2Label: document.getElementById("wire2Label"),
+      centerResult: document.getElementById("centerResult"),
+      centerForce: document.getElementById("centerForce"),
+      distanceLine: document.getElementById("distanceLine"),
+      distanceText: document.getElementById("distanceText"),
+      taskText: document.getElementById("taskText"),
+      taskAnswer: document.getElementById("taskAnswer"),
+      feedback: document.getElementById("feedback"),
+      chart1Title: document.getElementById("chart1Title"),
+      chart1Caption: document.getElementById("chart1Caption"),
+      chart1: document.getElementById("chart1"),
+      chart2: document.getElementById("chart2")
+    };
+
+    const tasks = [
+      {
+        type: "numeric",
+        text: "Leia jõud, kui I₁ = 2 A, I₂ = 3 A, l = 1.5 m ja r = 0.05 m. Kasuta K = 2×10⁻⁷. Sisesta vastus njuutonites.",
+        answer: 3.6e-5,
+        tol: 0.03,
+        explanation: "F = 2×10⁻⁷ × 2 × 3 × 1.5 / 0.05 = 3.6×10⁻⁵ N"
+      },
+      {
+        type: "text",
+        text: "Mõlemas juhtmes on vool ülespoole. Kas juhtmed tõmbuvad või tõukuvad? Sisesta: tõmbuvad või tõukuvad",
+        answerText: "tõmbuvad",
+        explanation: "Samasuunalised voolud tõmbuvad."
+      },
+      {
+        type: "text",
+        text: "Voolud on vastassuunalised. Kas juhtmed tõmbuvad või tõukuvad? Sisesta: tõmbuvad või tõukuvad",
+        answerText: "tõukuvad",
+        explanation: "Vastassuunalised voolud tõukuvad."
+      },
+      {
+        type: "text",
+        text: "Kui juhtmete vahekaugus väheneb 2 korda ja kõik muu jääb samaks, kuidas muutub jõud? Sisesta: kahekordistub / väheneb 2 korda / jääb samaks",
+        answerText: "kahekordistub",
+        explanation: "Valemis on r nimetajas, seega r vähenemine 2 korda teeb jõu 2 korda suuremaks."
+      },
+      {
+        type: "text",
+        text: "Kui mõlemad voolud kahekordistuvad, kuidas muutub jõud? Sisesta: 2 korda / 4 korda / 8 korda",
+        answerText: "4 korda",
+        explanation: "I₁·I₂ korrutis muutub 2·2 = 4 korda suuremaks."
+      },
+      {
+        type: "numeric",
+        text: "Leia jõud, kui I₁ = 4 A, I₂ = 5 A, l = 2 m ja r = 0.10 m. Sisesta vastus njuutonites.",
+        answer: 8e-5,
+        tol: 0.03,
+        explanation: "F = 2×10⁻⁷ × 4 × 5 × 2 / 0.10 = 8×10⁻⁵ N"
+      },
+      {
+        type: "text",
+        text: "Kas vastastikmõju on olemas, kui ühes juhtmes voolu ei ole? Sisesta: jah või ei",
+        answerText: "ei",
+        explanation: "Kui üks vool on 0, siis F = 0."
+      }
+    ];
+
+    function formatScientific(num){
+      if (num === 0) return "0 N";
+      const exp = Math.floor(Math.log10(Math.abs(num)));
+      const mant = num / Math.pow(10, exp);
+      const supers = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+      const expText = String(exp).split('').map(ch => supers[ch] || ch).join('');
+      return `${mant.toFixed(2)} × 10${expText} N`;
+    }
+
+    function dirText(dir){ return dir === 1 ? "↑ üles" : "↓ alla"; }
+
+    function interactionType(){
+      if (state.i1 === 0 || state.i2 === 0) return "none";
+      return state.dir1 === state.dir2 ? "attract" : "repel";
+    }
+
+    function calculateForce(i1=state.i1, i2=state.i2, l=state.l, r=state.r){
+      return state.k * i1 * i2 * l / r;
+    }
+
+    function explainInteraction(type){
+      if (type === "none") return "Vähemalt ühes juhtmes on vool 0 A, seega juhtmete vahel vastastikmõju ei teki.";
+      if (type === "attract") return "Samasuunaliste voolude korral on juhtmete vaheline jõud suunatud teineteise poole.";
+      return "Vastassuunaliste voolude korral on juhtmete vaheline jõud suunatud teineteisest eemale.";
+    }
+
+    function buildCalculation(force){
+      const signless = force.toExponential(3).replace('e', ' × 10^');
+      return [
+        "Valem:",
+        "F = K · I₁ · I₂ · l / r",
+        "",
+        "Asendus:",
+        `F = ${state.k.toExponential(0)} · ${state.i1.toFixed(1)} · ${state.i2.toFixed(1)} · ${state.l.toFixed(2)} / ${state.r.toFixed(3)}`,
+        "",
+        `F = ${signless} N`,
+        "",
+        "Järeldus:",
+        explainInteraction(interactionType())
+      ].join("\n");
+    }
+
+    function drawField(x, color, reverse=false){
+      const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+      g.setAttribute("opacity","0.78");
+      const radii = [32, 58, 84, 110];
+      radii.forEach((r, idx) => {
+        const circle = document.createElementNS("http://www.w3.org/2000/svg","circle");
+        circle.setAttribute("cx", x);
+        circle.setAttribute("cy", 260);
+        circle.setAttribute("r", r);
+        circle.setAttribute("fill", "none");
+        circle.setAttribute("stroke", color);
+        circle.setAttribute("stroke-width", idx === 0 ? 3 : 2);
+        circle.setAttribute("stroke-dasharray", idx === 0 ? "0" : "6 8");
+        circle.setAttribute("opacity", 0.15 + idx * 0.08);
+        g.appendChild(circle);
+
+        const arrow = document.createElementNS("http://www.w3.org/2000/svg","path");
+        const a = reverse ? -1 : 1;
+        const sx = x + r;
+        const sy = 260;
+        const dx = x + r - 18;
+        const dy = 260 - 16 * a;
+        arrow.setAttribute("d", `M ${sx} ${sy} L ${dx} ${dy} L ${dx+2} ${dy+10*a}`);
+        arrow.setAttribute("fill", color);
+        arrow.setAttribute("opacity", 0.5);
+        g.appendChild(arrow);
+      });
+      return g;
+    }
+
+    function updateArrows(arrowEl, x, dir, colorMarker){
+      if (dir === 1){
+        arrowEl.setAttribute("x1", x); arrowEl.setAttribute("y1", 310);
+        arrowEl.setAttribute("x2", x); arrowEl.setAttribute("y2", 210);
+      } else {
+        arrowEl.setAttribute("x1", x); arrowEl.setAttribute("y1", 210);
+        arrowEl.setAttribute("x2", x); arrowEl.setAttribute("y2", 310);
+      }
+      arrowEl.setAttribute("marker-end", colorMarker);
+    }
+
+    function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+    function drawAxes(ctx, w, h, labelX, labelY){
+      ctx.clearRect(0,0,w,h);
+      const m = {l:58, r:16, t:18, b:36};
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(m.l, h-m.b);
+      ctx.lineTo(w-m.r, h-m.b);
+      ctx.moveTo(m.l, h-m.b);
+      ctx.lineTo(m.l, m.t);
+      ctx.stroke();
+
+      ctx.fillStyle = "#475569";
+      ctx.font = "13px Arial";
+      ctx.fillText(labelX, w - 85, h - 10);
+      ctx.save();
+      ctx.translate(16, 26);
+      ctx.rotate(-Math.PI/2);
+      ctx.fillText(labelY, 0, 0);
+      ctx.restore();
+
+      return m;
+    }
+
+    function drawLineChart(canvas, xs, ys, highlightIndex, xLabel, yLabel, lineColor){
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width, h = canvas.height;
+      const m = drawAxes(ctx, w, h, xLabel, yLabel);
+      const plotW = w - m.l - m.r;
+      const plotH = h - m.t - m.b;
+      const minX = Math.min(...xs), maxX = Math.max(...xs);
+      const minY = 0, maxY = Math.max(...ys) * 1.08 || 1;
+
+      // grid
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.lineWidth = 1;
+      for(let i=0;i<=4;i++){
+        const y = m.t + plotH * i/4;
+        ctx.beginPath(); ctx.moveTo(m.l, y); ctx.lineTo(w-m.r, y); ctx.stroke();
+      }
+
+      function pxX(x){ return m.l + ((x - minX)/(maxX - minX || 1)) * plotW; }
+      function pxY(y){ return h - m.b - ((y - minY)/(maxY - minY || 1)) * plotH; }
+
+      // labels
+      ctx.fillStyle = "#64748b";
+      ctx.font = "12px Arial";
+      for(let i=0;i<5;i++){
+        const xVal = minX + (maxX-minX)*i/4;
+        const x = pxX(xVal);
+        ctx.fillText(xVal.toFixed(2), x - 12, h - 14);
+      }
+      for(let i=0;i<5;i++){
+        const yVal = maxY*i/4;
+        const y = pxY(yVal);
+        ctx.fillText(yVal.toExponential(1), 4, y + 4);
+      }
+
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      xs.forEach((x, idx)=>{
+        const px = pxX(x), py = pxY(ys[idx]);
+        if(idx===0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+
+      ctx.fillStyle = lineColor;
+      xs.forEach((x, idx)=>{
+        const px = pxX(x), py = pxY(ys[idx]);
+        ctx.beginPath(); ctx.arc(px, py, 3.2, 0, Math.PI*2); ctx.fill();
+      });
+
+      if(highlightIndex >=0 && highlightIndex < xs.length){
+        const px = pxX(xs[highlightIndex]), py = pxY(ys[highlightIndex]);
+        ctx.fillStyle = "#dc2626";
+        ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI*2); ctx.stroke();
+      }
+    }
+
+    function updateCharts(){
+      const xs1 = [], ys1 = [];
+      if(state.graphMode === "r"){
+        els.chart1Title.textContent = "F sõltuvus vahekaugusest r";
+        els.chart1Caption.textContent = "Punane punkt näitab hetkevalikut. Kui r kasvab, siis jõud väheneb.";
+        for(let r=0.01; r<=0.2001; r+=0.01){
+          xs1.push(Number(r.toFixed(2)));
+          ys1.push(calculateForce(state.i1, state.i2, state.l, r));
+        }
+        const hi = xs1.findIndex(x => Math.abs(x - Number(state.r.toFixed(2))) < 0.006);
+        drawLineChart(els.chart1, xs1, ys1, hi === -1 ? 0 : hi, "r (m)", "F (N)", "#1f6feb");
+      } else {
+        els.chart1Title.textContent = "F sõltuvus voolust I₁";
+        els.chart1Caption.textContent = "Punane punkt näitab hetkevalikut. Kui I₁ kasvab, siis jõud kasvab võrdeliselt.";
+        for(let i=0; i<=10.0001; i+=0.5){
+          xs1.push(Number(i.toFixed(1)));
+          ys1.push(calculateForce(i, state.i2, state.l, state.r));
+        }
+        const hi = xs1.findIndex(x => Math.abs(x - Number(state.i1.toFixed(1))) < 0.26);
+        drawLineChart(els.chart1, xs1, ys1, hi === -1 ? 0 : hi, "I₁ (A)", "F (N)", "#ea580c");
+      }
+
+      const xs2 = [], ys2 = [];
+      for(let l=0.2; l<=5.0001; l+=0.2){
+        xs2.push(Number(l.toFixed(1)));
+        ys2.push(calculateForce(state.i1, state.i2, l, state.r));
+      }
+      const hi2 = xs2.findIndex(x => Math.abs(x - Number(state.l.toFixed(1))) < 0.11);
+      drawLineChart(els.chart2, xs2, ys2, hi2 === -1 ? 0 : hi2, "l (m)", "F (N)", "#7c3aed");
+    }
+
+    function updateSimulation(){
+      const force = calculateForce();
+      const type = interactionType();
+
+      els.i1Val.textContent = `${state.i1.toFixed(1)} A`;
+      els.i2Val.textContent = `${state.i2.toFixed(1)} A`;
+      els.rVal.textContent = `${state.r.toFixed(3)} m`;
+      els.lVal.textContent = `${state.l.toFixed(2)} m`;
+
+      const fTxt = formatScientific(force);
+      const typeTxt = type === "attract" ? "TÕMBUVAD" : type === "repel" ? "TÕUKUVAD" : "PUUDUB";
+      const interactionSentence = type === "attract" ? "Juhtmed tõmbuvad." : type === "repel" ? "Juhtmed tõukuvad." : "Juhtmete vahel jõudu ei teki.";
+
+      els.forceBig.textContent = fTxt;
+      els.forceReadout.textContent = fTxt;
+      els.centerForce.textContent = `F = ${fTxt}`;
+      els.interactionBig.textContent = typeTxt;
+      els.interactionReadout.textContent = interactionSentence;
+      els.explainReadout.textContent = explainInteraction(type);
+      els.wire1Big.textContent = `${state.dir1 === 1 ? "↑" : "↓"} ${state.i1.toFixed(1)} A`;
+      els.wire2Big.textContent = `${state.dir2 === 1 ? "↑" : "↓"} ${state.i2.toFixed(1)} A`;
+      els.dir1Btn.textContent = `I₁ suund: ${dirText(state.dir1)}`;
+      els.dir2Btn.textContent = `I₂ suund: ${dirText(state.dir2)}`;
+
+      els.calcText.textContent = buildCalculation(force);
+      els.calculationBox.style.display = state.showCalculation ? "block" : "none";
+
+      const stageLeft = 450;
+      const pxDistance = 150 + ((state.r - 0.01) / (0.2 - 0.01)) * 210;
+      const forceScaled = force * 1e6;
+      let shift = clamp(Math.log10(forceScaled + 1) * 12, 0, 26);
+      if (type === "none") shift = 0;
+
+      const baseX1 = stageLeft - pxDistance / 2;
+      const baseX2 = stageLeft + pxDistance / 2;
+      const x1 = type === "attract" ? baseX1 + shift : type === "repel" ? baseX1 - shift : baseX1;
+      const x2 = type === "attract" ? baseX2 - shift : type === "repel" ? baseX2 + shift : baseX2;
+
+      els.wire1.setAttribute("x1", x1); els.wire1.setAttribute("x2", x1);
+      els.wire2.setAttribute("x1", x2); els.wire2.setAttribute("x2", x2);
+
+      updateArrows(els.current1Arrow, x1 - 28, state.dir1, "url(#arrowBlue)");
+      updateArrows(els.current2Arrow, x2 + 28, state.dir2, "url(#arrowGray)");
+
+      els.wire1Label.setAttribute("x", x1 - 58);
+      els.wire1Label.textContent = `I₁ = ${state.i1.toFixed(1)} A`;
+      els.wire2Label.setAttribute("x", x2 + 48);
+      els.wire2Label.textContent = `I₂ = ${state.i2.toFixed(1)} A`;
+
+      els.distanceLine.setAttribute("x1", baseX1);
+      els.distanceLine.setAttribute("x2", baseX2);
+      els.distanceText.setAttribute("x", (baseX1 + baseX2) / 2);
+      els.distanceText.textContent = `r = ${state.r.toFixed(3)} m`;
+
+      const arrowLen = clamp(40 + shift * 1.6, 48, 96);
+      if (type === "attract"){
+        els.force1.setAttribute("x1", x1 - arrowLen);
+        els.force1.setAttribute("x2", x1 + 10);
+        els.force2.setAttribute("x1", x2 + arrowLen);
+        els.force2.setAttribute("x2", x2 - 10);
+      } else if (type === "repel"){
+        els.force1.setAttribute("x1", x1 + arrowLen);
+        els.force1.setAttribute("x2", x1 - 10);
+        els.force2.setAttribute("x1", x2 - arrowLen);
+        els.force2.setAttribute("x2", x2 + 10);
+      } else {
+        els.force1.setAttribute("x1", x1 - 1); els.force1.setAttribute("x2", x1 - 1);
+        els.force2.setAttribute("x1", x2 + 1); els.force2.setAttribute("x2", x2 + 1);
+      }
+      els.force1.setAttribute("y1", 260); els.force1.setAttribute("y2", 260);
+      els.force2.setAttribute("y1", 260); els.force2.setAttribute("y2", 260);
+      els.f1Label.setAttribute("x", type === "repel" ? x1 + arrowLen + 8 : x1 - arrowLen - 24);
+      els.f2Label.setAttribute("x", type === "repel" ? x2 - arrowLen - 8 : x2 + arrowLen + 8);
+
+      els.centerResult.textContent = typeTxt;
+
+      els.fieldLayer.innerHTML = "";
+      if (state.showField){
+        els.fieldLayer.appendChild(drawField(x1, "#1f6feb", state.dir1 === -1));
+        els.fieldLayer.appendChild(drawField(x2, "#0a884a", state.dir2 === -1));
+      }
+
+      const teacher = state.mode === "teacher";
+      els.calcToggleBtn.style.display = teacher ? "inline-block" : "none";
+      els.centerForce.style.display = teacher ? "block" : "none";
+
+      updateCharts();
+    }
+
+    function setActiveModeButtons(){
+      els.studentModeBtn.classList.toggle("active", state.mode === "student");
+      els.teacherModeBtn.classList.toggle("active", state.mode === "teacher");
+      els.studentModeBtn.classList.toggle("good", state.mode === "student");
+      els.teacherModeBtn.classList.toggle("good", state.mode === "teacher");
+      els.studentModeBtn.classList.toggle("ghost", state.mode !== "student");
+      els.teacherModeBtn.classList.toggle("ghost", state.mode !== "teacher");
+    }
+
+    function setToggleButtons(){
+      els.fieldToggleBtn.classList.toggle("active", state.showField);
+      els.calcToggleBtn.classList.toggle("active", state.showCalculation);
+      els.fieldToggleBtn.textContent = state.showField ? "Magnetväli sees" : "Magnetväli peidus";
+      els.calcToggleBtn.textContent = state.showCalculation ? "Arvutuskäik sees" : "Arvutuskäik peidus";
+      els.graphModeR.classList.toggle("active", state.graphMode === "r");
+      els.graphModeR.classList.toggle("good", state.graphMode === "r");
+      els.graphModeR.classList.toggle("ghost", state.graphMode !== "r");
+      els.graphModeI.classList.toggle("active", state.graphMode === "i");
+      els.graphModeI.classList.toggle("good", state.graphMode === "i");
+      els.graphModeI.classList.toggle("ghost", state.graphMode !== "i");
+    }
+
+    function loadTask(){
+      const task = tasks[state.taskIndex % tasks.length];
+      els.taskText.textContent = task.text;
+      els.taskAnswer.value = "";
+      els.feedback.textContent = "Sisesta vastus ja vajuta Kontrolli.";
+    }
+
+    function normalizeText(s){
+      return String(s).trim().toLowerCase().replace(",", ".");
+    }
+
+    function parseFlexibleNumber(str){
+      const cleaned = normalizeText(str)
+        .replace(/\s+/g, "")
+        .replace(/×10\^/g, "e")
+        .replace(/x10\^/g, "e")
+        .replace(/\*10\^/g, "e")
+        .replace(/·10\^/g, "e")
+        .replace(/n$/g, "");
+      return Number(cleaned);
+    }
+
+    function checkTask(){
+      const task = tasks[state.taskIndex % tasks.length];
+      const raw = els.taskAnswer.value;
+      if (!raw.trim()){
+        els.feedback.textContent = "Vastus puudub.";
+        return;
+      }
+
+      if (task.type === "numeric"){
+        const val = parseFlexibleNumber(raw);
+        if (!Number.isFinite(val)){
+          els.feedback.textContent = "Sisesta arv kujul 0.000036 või 3.6e-5.";
+          return;
+        }
+        const relErr = Math.abs(val - task.answer) / Math.max(Math.abs(task.answer), 1e-12);
+        if (relErr <= task.tol){
+          els.feedback.textContent = `Õige. ${task.explanation}`;
+        } else {
+          els.feedback.textContent = `See ei ole päris õige. ${task.explanation}`;
+        }
+      } else {
+        const ans = normalizeText(raw);
+        if (ans === normalizeText(task.answerText)){
+          els.feedback.textContent = `Õige. ${task.explanation}`;
+        } else {
+          els.feedback.textContent = `Vale. ${task.explanation}`;
+        }
+      }
+    }
+
+    function showAnswer(){
+      const task = tasks[state.taskIndex % tasks.length];
+      els.feedback.textContent = `Vastus: ${task.type === "numeric" ? task.answer + " N" : task.answerText}. ${task.explanation}`;
+    }
+
+    function nextTask(){
+      state.taskIndex = (state.taskIndex + 1) % tasks.length;
+      loadTask();
+    }
+
+    function resetState(){
+      state.i1 = 3.0;
+      state.i2 = 3.0;
+      state.dir1 = 1;
+      state.dir2 = 1;
+      state.r = 0.05;
+      state.l = 1.0;
+      state.showField = true;
+      state.showCalculation = true;
+      state.mode = "student";
+      state.graphMode = "r";
+
+      els.i1.value = state.i1;
+      els.i2.value = state.i2;
+      els.r.value = state.r;
+      els.l.value = state.l;
+
+      setActiveModeButtons();
+      setToggleButtons();
+      updateSimulation();
+    }
+
+    els.i1.addEventListener("input", e => { state.i1 = Number(e.target.value); updateSimulation(); });
+    els.i2.addEventListener("input", e => { state.i2 = Number(e.target.value); updateSimulation(); });
+    els.r.addEventListener("input", e => { state.r = Number(e.target.value); updateSimulation(); });
+    els.l.addEventListener("input", e => { state.l = Number(e.target.value); updateSimulation(); });
+
+    els.dir1Btn.addEventListener("click", () => { state.dir1 *= -1; updateSimulation(); });
+    els.dir2Btn.addEventListener("click", () => { state.dir2 *= -1; updateSimulation(); });
+
+    document.getElementById("sameDirBtn").addEventListener("click", () => { state.dir1 = 1; state.dir2 = 1; updateSimulation(); });
+    document.getElementById("oppositeDirBtn").addEventListener("click", () => { state.dir1 = 1; state.dir2 = -1; updateSimulation(); });
+    document.getElementById("equalCurrentsBtn").addEventListener("click", () => {
+      state.i2 = state.i1; els.i2.value = state.i2; updateSimulation();
+    });
+    document.getElementById("smallDistanceBtn").addEventListener("click", () => {
+      state.r = 0.02; els.r.value = state.r; updateSimulation();
+    });
+    document.getElementById("largeDistanceBtn").addEventListener("click", () => {
+      state.r = 0.15; els.r.value = state.r; updateSimulation();
+    });
+    document.getElementById("resetBtn").addEventListener("click", resetState);
+
+    els.fieldToggleBtn.addEventListener("click", () => { state.showField = !state.showField; setToggleButtons(); updateSimulation(); });
+    els.calcToggleBtn.addEventListener("click", () => { state.showCalculation = !state.showCalculation; setToggleButtons(); updateSimulation(); });
+    els.studentModeBtn.addEventListener("click", () => { state.mode = "student"; setActiveModeButtons(); updateSimulation(); });
+    els.teacherModeBtn.addEventListener("click", () => { state.mode = "teacher"; setActiveModeButtons(); updateSimulation(); });
+    els.graphModeR.addEventListener("click", () => { state.graphMode = "r"; setToggleButtons(); updateSimulation(); });
+    els.graphModeI.addEventListener("click", () => { state.graphMode = "i"; setToggleButtons(); updateSimulation(); });
+
+    document.getElementById("checkAnswerBtn").addEventListener("click", checkTask);
+    document.getElementById("showAnswerBtn").addEventListener("click", showAnswer);
+    document.getElementById("nextTaskBtn").addEventListener("click", nextTask);
+    els.taskAnswer.addEventListener("keydown", e => { if (e.key === "Enter") checkTask(); });
+
+    setActiveModeButtons();
+    setToggleButtons();
+    loadTask();
+    updateSimulation();
+  </script>
+</body>
+</html>

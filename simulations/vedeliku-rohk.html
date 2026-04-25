@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rõhu levik – tahke aine ja vedelik</title>
+  <style>
+    :root{
+      --bg:#eef3f9;
+      --panel:#ffffff;
+      --line:#cfd8e3;
+      --text:#1f2937;
+      --muted:#5f6b7a;
+      --blue:#2563eb;
+      --green:#16a34a;
+      --gray:#64748b;
+      --red:#ef4444;
+      --solid:#b57cf0;
+      --solid-line:#8b5cf6;
+      --liquid:#38bdf8;
+      --liquid-dark:#0ea5e9;
+      --orange:#f59e0b;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial, Helvetica, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .wrap{
+      max-width:1380px;
+      margin:0 auto;
+      padding:18px;
+    }
+    h1{
+      margin:0 0 8px;
+      font-size:26px;
+    }
+    .subtitle{
+      color:var(--muted);
+      margin-bottom:14px;
+      line-height:1.45;
+    }
+    .layout{
+      display:grid;
+      grid-template-columns:340px 1fr 330px;
+      gap:16px;
+      align-items:start;
+    }
+    .panel{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      box-shadow:0 8px 20px rgba(0,0,0,0.05);
+    }
+    h2{
+      margin:0 0 12px;
+      font-size:18px;
+    }
+    .group{
+      border-bottom:1px solid #e7edf5;
+      padding-bottom:14px;
+      margin-bottom:14px;
+    }
+    .group:last-child{
+      margin-bottom:0;
+      border-bottom:none;
+      padding-bottom:0;
+    }
+    label{
+      display:block;
+      font-weight:700;
+      margin-bottom:6px;
+    }
+    .value{
+      color:var(--blue);
+      font-weight:700;
+      margin-left:8px;
+    }
+    input[type="range"]{
+      width:100%;
+      cursor:pointer;
+    }
+    .small{
+      font-size:14px;
+      color:var(--muted);
+      line-height:1.45;
+      margin-top:4px;
+    }
+    .row{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    button{
+      border:none;
+      border-radius:10px;
+      padding:10px 14px;
+      font-size:15px;
+      font-weight:700;
+      color:#fff;
+      cursor:pointer;
+    }
+    .btn-blue{background:var(--blue)}
+    .btn-green{background:var(--green)}
+    .btn-gray{background:var(--gray)}
+    .formula{
+      font-size:18px;
+      font-weight:700;
+      text-align:center;
+      background:#eff6ff;
+      border:1px solid #bfdbfe;
+      border-radius:12px;
+      padding:12px;
+      margin-top:10px;
+    }
+    .explain{
+      margin-top:12px;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid #d7e3f2;
+      background:#f8fbff;
+      line-height:1.5;
+      font-size:15px;
+    }
+    .sim-wrap canvas,
+    .side canvas{
+      display:block;
+      width:100%;
+      height:auto;
+      border-radius:12px;
+      border:1px solid #d9e5f2;
+      background:linear-gradient(to bottom, #f8fbff 0%, #eef5ff 100%);
+    }
+    .legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:14px;
+      margin-top:10px;
+      font-size:14px;
+    }
+    .legend-item{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .swatch{
+      width:16px;
+      height:16px;
+      border-radius:4px;
+      border:1px solid rgba(0,0,0,0.15);
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+    }
+    th, td{
+      border:1px solid #d9e5f2;
+      padding:8px;
+      text-align:left;
+      vertical-align:top;
+    }
+    th{
+      background:#f3f8fe;
+    }
+    .note{
+      margin-top:12px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:#fff7ed;
+      border:1px solid #fdba74;
+      font-size:14px;
+      line-height:1.5;
+    }
+    .checkbox-row{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-top:8px;
+      font-size:14px;
+    }
+    .pill{
+      display:inline-block;
+      padding:4px 8px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      background:#eef2ff;
+      color:#4338ca;
+      margin-bottom:8px;
+    }
+
+    @media (max-width:1180px){
+      .layout{
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Rõhu levik: tahke aine ja vedelik</h1>
+    <div class="subtitle">
+      Simulatsioon võrdleb, kuidas löögist tekkinud rõhk levib tahkes aines ja vedelikus.
+      Paremal on lisatud graafik ja andmetabel, et siduda nähtav pilt valemitega.
+    </div>
+
+    <div class="layout">
+      <!-- LEFT -->
+      <div class="panel">
+        <h2>Juhtnupud</h2>
+
+        <div class="group">
+          <label for="force">Rõhumisjõud F <span id="forceVal" class="value">900 N</span></label>
+          <input id="force" type="range" min="100" max="2000" step="50" value="900">
+          <div class="small">Suurem jõud tähendab tugevamat lööki.</div>
+        </div>
+
+        <div class="group">
+          <label for="area">Pindala S <span id="areaVal" class="value">0.020 m²</span></label>
+          <input id="area" type="range" min="0.005" max="0.050" step="0.001" value="0.020">
+          <div class="small">Väiksem S tähendab suuremat rõhku sama jõu korral.</div>
+        </div>
+
+        <div class="group">
+          <label for="duration">Löögi kestus <span id="durationVal" class="value">0.35 s</span></label>
+          <input id="duration" type="range" min="0.10" max="1.00" step="0.05" value="0.35">
+          <div class="small">Lühem löök on järsem. Pikem löök on sujuvam.</div>
+        </div>
+
+        <div class="group">
+          <label for="viscosity">Vedeliku viskoossus <span id="viscosityVal" class="value">0.50</span></label>
+          <input id="viscosity" type="range" min="0.10" max="1.00" step="0.05" value="0.50">
+          <div class="small">Suurem väärtus tähendab „paksemat” vedelikku.</div>
+        </div>
+
+        <div class="group">
+          <label for="density">Tihedus ρ <span id="densityVal" class="value">1000 kg/m³</span></label>
+          <input id="density" type="range" min="600" max="1400" step="50" value="1000">
+          <div class="small">Seda kasutatakse hüdrostaatilise rõhu näitamiseks: p = ρgh.</div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="hydroToggle" checked>
+            <label for="hydroToggle" style="margin:0; font-weight:600;">Näita hüdrostaatilist rõhku</label>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="row">
+            <button id="hitBtn" class="btn-blue">Löö vasaraga</button>
+            <button id="autoBtn" class="btn-green">Auto kordus: väljas</button>
+            <button id="resetBtn" class="btn-gray">Lähtesta</button>
+          </div>
+        </div>
+
+        <div class="formula" id="formulaBox">p = F / S = 900 / 0.020 = 45000 Pa</div>
+
+        <div class="explain" id="explainBox">
+          Tahke aine puhul liigub mõju peamiselt alla. Vedelikus levib rõhk alla ja külgedele.
+          Sügavusega suureneb vedelikus ka hüdrostaatiline rõhk.
+        </div>
+
+        <div class="note">
+          <strong>Õpetuslik märkus:</strong><br>
+          See on lihtsustatud mudel. Reaalses vedelikus kirjeldatakse rõhu levikut täpsemalt keerulisema füüsikaga.
+          Siin on eesmärk näidata peamist erinevust: tahkes aines on mõju suunatum, vedelikus levib rõhk mitmesse suunda.
+        </div>
+      </div>
+
+      <!-- CENTER -->
+      <div class="panel sim-wrap">
+        <canvas id="simCanvas" width="920" height="660"></canvas>
+        <div class="legend">
+          <div class="legend-item"><span class="swatch" style="background:#b57cf0;"></span> Tahke aine</div>
+          <div class="legend-item"><span class="swatch" style="background:#38bdf8;"></span> Vedelik</div>
+          <div class="legend-item"><span class="swatch" style="background:#ef4444;"></span> Rõhu levik</div>
+          <div class="legend-item"><span class="swatch" style="background:#2563eb;"></span> Löögisuund</div>
+          <div class="legend-item"><span class="swatch" style="background:#f59e0b;"></span> Hüdrostaatiline rõhk</div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="panel side">
+        <div class="pill">Lisa selgitus</div>
+        <h2>Rõhk vs sügavus</h2>
+        <canvas id="graphCanvas" width="300" height="240"></canvas>
+
+        <div style="height:14px"></div>
+
+        <h2>Andmetabel</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Suurus</th>
+              <th>Väärtus</th>
+              <th>Selgitus</th>
+            </tr>
+          </thead>
+          <tbody id="dataTableBody"></tbody>
+        </table>
+
+        <div class="note" id="noteBox">
+          Graafik näitab, et vedelikus kasvab rõhk sügavusega.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const simCanvas = document.getElementById("simCanvas");
+    const simCtx = simCanvas.getContext("2d");
+
+    const graphCanvas = document.getElementById("graphCanvas");
+    const graphCtx = graphCanvas.getContext("2d");
+
+    const forceSlider = document.getElementById("force");
+    const areaSlider = document.getElementById("area");
+    const durationSlider = document.getElementById("duration");
+    const viscositySlider = document.getElementById("viscosity");
+    const densitySlider = document.getElementById("density");
+    const hydroToggle = document.getElementById("hydroToggle");
+
+    const forceVal = document.getElementById("forceVal");
+    const areaVal = document.getElementById("areaVal");
+    const durationVal = document.getElementById("durationVal");
+    const viscosityVal = document.getElementById("viscosityVal");
+    const densityVal = document.getElementById("densityVal");
+
+    const formulaBox = document.getElementById("formulaBox");
+    const explainBox = document.getElementById("explainBox");
+    const dataTableBody = document.getElementById("dataTableBody");
+    const noteBox = document.getElementById("noteBox");
+
+    const hitBtn = document.getElementById("hitBtn");
+    const autoBtn = document.getElementById("autoBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    let F = +forceSlider.value;
+    let S = +areaSlider.value;
+    let strikeDuration = +durationSlider.value;
+    let viscosity = +viscositySlider.value;
+    let density = +densitySlider.value;
+    let showHydro = hydroToggle.checked;
+    let pressure = F / S;
+
+    const g = 9.8;
+    let autoMode = false;
+    let lastAutoHit = 0;
+
+    const state = {
+      striking: false,
+      strikeStart: 0
+    };
+
+    const layout = {
+      leftX: 40,
+      topY: 70,
+      boxW: 380,
+      boxH: 540,
+      rightX: 500
+    };
+
+    const solid = {
+      cols: 8,
+      rows: 6,
+      particles: [],
+      homeTop: 240,
+      cellX: 40,
+      cellY: 40
+    };
+
+    const liquid = {
+      particles: [],
+      left: layout.rightX + 55,
+      right: layout.rightX + 325,
+      surfaceY: 295,
+      bottom: layout.topY + 470,
+      targetLevels: []
+    };
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function updateValues() {
+      F = +forceSlider.value;
+      S = +areaSlider.value;
+      strikeDuration = +durationSlider.value;
+      viscosity = +viscositySlider.value;
+      density = +densitySlider.value;
+      showHydro = hydroToggle.checked;
+      pressure = F / S;
+
+      forceVal.textContent = `${F.toFixed(0)} N`;
+      areaVal.textContent = `${S.toFixed(3)} m²`;
+      durationVal.textContent = `${strikeDuration.toFixed(2)} s`;
+      viscosityVal.textContent = `${viscosity.toFixed(2)}`;
+      densityVal.textContent = `${density.toFixed(0)} kg/m³`;
+
+      formulaBox.textContent = `p = F / S = ${F.toFixed(0)} / ${S.toFixed(3)} = ${pressure.toFixed(0)} Pa`;
+
+      explainBox.innerHTML = `
+        <strong>Selgitus:</strong><br>
+        Löögist tekkiv rõhk on praegu <strong>${pressure.toFixed(0)} Pa</strong>.
+        Tahke aine puhul liigub mõju peamiselt <strong>alla löögi suunas</strong>.
+        Vedelikus levib rõhk <strong>alla ja külgedele</strong>.
+        ${showHydro ? `Lisaks suureneb vedelikus hüdrostaatiline rõhk sügavusega.` : `Hüdrostaatilise rõhu lisavaade on praegu peidetud.`}
+      `;
+
+      updateTable();
+      drawGraph();
+    }
+
+    function updateTable() {
+      const h = Math.max(0, (liquid.bottom - liquid.surfaceY) / 100);
+      const hydroBottom = density * g * h;
+      const totalBottom = pressure + hydroBottom;
+
+      dataTableBody.innerHTML = `
+        <tr>
+          <td>F</td>
+          <td>${F.toFixed(0)} N</td>
+          <td>Vasara löögijõud</td>
+        </tr>
+        <tr>
+          <td>S</td>
+          <td>${S.toFixed(3)} m²</td>
+          <td>Löögipindala</td>
+        </tr>
+        <tr>
+          <td>p = F/S</td>
+          <td>${pressure.toFixed(0)} Pa</td>
+          <td>Löögist tekkiv rõhk</td>
+        </tr>
+        <tr>
+          <td>ρ</td>
+          <td>${density.toFixed(0)} kg/m³</td>
+          <td>Vedeliku tihedus</td>
+        </tr>
+        <tr>
+          <td>h</td>
+          <td>${h.toFixed(2)} m</td>
+          <td>Vedelikusamba ligikaudne kõrgus</td>
+        </tr>
+        <tr>
+          <td>ρgh</td>
+          <td>${hydroBottom.toFixed(0)} Pa</td>
+          <td>Hüdrostaatiline rõhk põhja lähedal</td>
+        </tr>
+        <tr>
+          <td>p + ρgh</td>
+          <td>${totalBottom.toFixed(0)} Pa</td>
+          <td>Ligikaudne kogurõhk põhja lähedal löögi ajal</td>
+        </tr>
+      `;
+
+      noteBox.innerHTML = showHydro
+        ? `Graafik ja tabel näitavad, et vedelikus kasvab rõhk sügavusega valemi <strong>p = ρgh</strong> järgi.`
+        : `Praegu on rõhu-sügavuse lisaselgitus peidetud. Nähtavaks saab selle märkeruuduga.`;
+    }
+
+    function resetSolid() {
+      solid.particles = [];
+      const startX = layout.leftX + 95;
+      for (let r = 0; r < solid.rows; r++) {
+        for (let c = 0; c < solid.cols; c++) {
+          const x = startX + c * solid.cellX;
+          const y = solid.homeTop + r * solid.cellY;
+          solid.particles.push({
+            homeX: x,
+            homeY: y,
+            x, y,
+            vx: 0, vy: 0
+          });
+        }
+      }
+    }
+
+    function resetLiquid() {
+      liquid.particles = [];
+      const cols = 14;
+      const rows = 6;
+      const width = liquid.right - liquid.left;
+      const dx = width / (cols - 1);
+      const dy = 26;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          liquid.particles.push({
+            x: liquid.left + c * dx + ((r % 2) ? 5 : 0),
+            y: liquid.surfaceY + 12 + r * dy,
+            vx: 0,
+            vy: 0,
+            radius: 7
+          });
+        }
+      }
+    }
+
+    function resetAll() {
+      state.striking = false;
+      state.strikeStart = 0;
+      resetSolid();
+      resetLiquid();
+      updateValues();
+    }
+
+    function startStrike() {
+      state.striking = true;
+      state.strikeStart = performance.now() / 1000;
+    }
+
+    function getStrikeProgress(now) {
+      if (!state.striking) return 0;
+      const elapsed = now - state.strikeStart;
+      const t = elapsed / strikeDuration;
+      if (t >= 1) {
+        state.striking = false;
+        return 0;
+      }
+      return Math.sin(Math.PI * t);
+    }
+
+    function applySolidStrike(progress) {
+      const cx = layout.leftX + layout.boxW / 2;
+      const cy = 220;
+      solid.particles.forEach(p => {
+        const dx = p.homeX - cx;
+        const dy = p.homeY - cy;
+        const spreadX = 70 + S * 2200;
+        const spreadY = 140;
+        const influence = Math.exp(-(dx * dx)/(spreadX*spreadX) - (dy * dy)/(spreadY*spreadY));
+
+        p.vy += progress * (pressure / 35000) * 20 * influence;
+        p.vx += (dx / 1200) * progress * (pressure / 50000) * 4;
+      });
+    }
+
+    function updateSolid(dt) {
+      const k = 0.12;
+      const damp = 0.84;
+      solid.particles.forEach(p => {
+        p.vx += (p.homeX - p.x) * k * dt * 60;
+        p.vy += (p.homeY - p.y) * k * dt * 60;
+        p.vx *= damp;
+        p.vy *= damp;
+        p.x += p.vx;
+        p.y += p.vy;
+      });
+    }
+
+    function applyLiquidStrike(progress) {
+      const cx = layout.rightX + layout.boxW / 2;
+      const cy = liquid.surfaceY + 4;
+
+      liquid.particles.forEach(p => {
+        const dx = p.x - cx;
+        const dy = p.y - cy;
+        const dist = Math.sqrt(dx*dx + dy*dy) + 0.0001;
+        const spread = 90 + S * 1800;
+        const influence = Math.exp(-(dist * dist)/(spread * spread));
+
+        p.vy += progress * (pressure / 35000) * 0.5 * influence;
+        p.vx += (dx / dist) * progress * (pressure / 48000) * 1.4 * influence;
+
+        if (dy > -10 && Math.abs(dx) < 75) {
+          p.vy -= progress * (pressure / 42000) * 0.9 * influence;
+        }
+      });
+    }
+
+    function updateLiquid(dt) {
+      const left = liquid.left;
+      const right = liquid.right;
+      const bottom = liquid.bottom;
+      const surface = liquid.surfaceY;
+
+      const gravity = 0.11;
+      const damp = 0.988 - viscosity * 0.015;
+
+      for (const p of liquid.particles) {
+        p.vy += gravity;
+
+        // "Sisemine vedelikurõhk" ja pinna hoidmine
+        const depth = Math.max(0, p.y - surface);
+        const hydroPush = depth * 0.0025;
+        p.vy -= hydroPush;
+
+        // Liiga sügavale vajumise vastu
+        const bottomResistance = Math.max(0, p.y - (bottom - 18)) * 0.04;
+        p.vy -= bottomResistance;
+
+        // Pinna lähedal hoidev nõrk taastav mõju
+        const surfaceRestore = (surface + 70 - p.y) * 0.0012;
+        p.vy += surfaceRestore;
+
+        p.vx *= damp;
+        p.vy *= damp;
+
+        p.x += p.vx * 60 * dt;
+        p.y += p.vy * 60 * dt;
+
+        if (p.x < left + p.radius) {
+          p.x = left + p.radius;
+          p.vx *= -0.4;
+        }
+        if (p.x > right - p.radius) {
+          p.x = right - p.radius;
+          p.vx *= -0.4;
+        }
+        if (p.y > bottom - p.radius) {
+          p.y = bottom - p.radius;
+          p.vy *= -0.35;
+        }
+
+        // Väga kõrgele tõusmise piir
+        if (p.y < surface - 38) {
+          p.y = surface - 38;
+          p.vy *= -0.15;
+        }
+      }
+
+      // Osakeste vaheline vastastikmõju
+      for (let i = 0; i < liquid.particles.length; i++) {
+        for (let j = i + 1; j < liquid.particles.length; j++) {
+          const a = liquid.particles[i];
+          const b = liquid.particles[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          const minDist = a.radius + b.radius - 0.5;
+
+          if (dist > 0 && dist < minDist) {
+            const overlap = (minDist - dist) / 2;
+            const nx = dx / dist;
+            const ny = dy / dist;
+
+            a.x -= nx * overlap;
+            a.y -= ny * overlap;
+            b.x += nx * overlap;
+            b.y += ny * overlap;
+
+            a.vx -= nx * 0.03;
+            a.vy -= ny * 0.03;
+            b.vx += nx * 0.03;
+            b.vy += ny * 0.03;
+          }
+        }
+      }
+    }
+
+    function drawArrow(ctx, x1, y1, x2, y2, color, width=4) {
+      const head = 11;
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - head * Math.cos(angle - Math.PI/6), y2 - head * Math.sin(angle - Math.PI/6));
+      ctx.lineTo(x2 - head * Math.cos(angle + Math.PI/6), y2 - head * Math.sin(angle + Math.PI/6));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x+r, y);
+      ctx.arcTo(x+w, y, x+w, y+h, r);
+      ctx.arcTo(x+w, y+h, x, y+h, r);
+      ctx.arcTo(x, y+h, x, y, r);
+      ctx.arcTo(x, y, x+w, y, r);
+      ctx.closePath();
+    }
+
+    function drawHammer(ctx, x, y, w, h, impactW, progress) {
+      const drop = progress * 14;
+      const yy = y + drop;
+
+      ctx.fillStyle = "#8b5e34";
+      ctx.fillRect(x + w*0.45, yy - 48, 12, 50);
+
+      ctx.fillStyle = "#374151";
+      ctx.fillRect(x, yy, w, h);
+
+      ctx.fillStyle = "#111827";
+      ctx.fillRect(x + w/2 - impactW/2, yy + h - 4, impactW, 8);
+    }
+
+    function drawSim(progress) {
+      simCtx.clearRect(0, 0, simCanvas.width, simCanvas.height);
+
+      simCtx.fillStyle = "#0f172a";
+      simCtx.font = "bold 18px Arial";
+      simCtx.fillText(`F = ${F.toFixed(0)} N`, 54, 34);
+      simCtx.fillText(`S = ${S.toFixed(3)} m²`, 230, 34);
+      simCtx.fillText(`p = ${pressure.toFixed(0)} Pa`, 410, 34);
+
+      // Boxes
+      simCtx.fillStyle = "#ffffff";
+      simCtx.strokeStyle = "#cfd8e3";
+      simCtx.lineWidth = 2;
+
+      roundRect(simCtx, layout.leftX, layout.topY, layout.boxW, layout.boxH, 16);
+      simCtx.fill();
+      simCtx.stroke();
+
+      roundRect(simCtx, layout.rightX, layout.topY, layout.boxW, layout.boxH, 16);
+      simCtx.fill();
+      simCtx.stroke();
+
+      simCtx.fillStyle = "#111827";
+      simCtx.font = "bold 22px Arial";
+      simCtx.fillText("Tahke aine", layout.leftX + 18, layout.topY + 30);
+      simCtx.fillText("Vedelik", layout.rightX + 18, layout.topY + 30);
+
+      drawSolid(progress);
+      drawLiquid(progress);
+    }
+
+    function drawSolid(progress) {
+      const x = layout.leftX;
+      const y = layout.topY;
+      const cx = x + layout.boxW / 2;
+      const top = 205;
+
+      simCtx.fillStyle = "rgba(181,124,240,0.10)";
+      simCtx.fillRect(x + 75, 200, 230, 310);
+
+      simCtx.strokeStyle = "rgba(139,92,246,0.33)";
+      simCtx.lineWidth = 2;
+      for (let r = 0; r < solid.rows; r++) {
+        for (let c = 0; c < solid.cols; c++) {
+          const i = r * solid.cols + c;
+          const p = solid.particles[i];
+          if (c < solid.cols - 1) {
+            const q = solid.particles[i+1];
+            simCtx.beginPath();
+            simCtx.moveTo(p.x, p.y);
+            simCtx.lineTo(q.x, q.y);
+            simCtx.stroke();
+          }
+          if (r < solid.rows - 1) {
+            const q = solid.particles[i + solid.cols];
+            simCtx.beginPath();
+            simCtx.moveTo(p.x, p.y);
+            simCtx.lineTo(q.x, q.y);
+            simCtx.stroke();
+          }
+        }
+      }
+
+      solid.particles.forEach(p => {
+        simCtx.beginPath();
+        simCtx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+        simCtx.fillStyle = "#b57cf0";
+        simCtx.fill();
+        simCtx.strokeStyle = "rgba(0,0,0,0.15)";
+        simCtx.stroke();
+      });
+
+      drawArrow(simCtx, cx, 125, cx, 190, "#2563eb", 4);
+
+      simCtx.strokeStyle = "rgba(239,68,68,0.75)";
+      simCtx.lineWidth = 4;
+      for (let i = 0; i < 5; i++) {
+        const spread = 8 + i * 10 + S * 240;
+        simCtx.beginPath();
+        simCtx.moveTo(cx - spread, top + i * 12);
+        simCtx.lineTo(cx + spread, top + i * 12);
+        simCtx.stroke();
+      }
+      drawArrow(simCtx, cx, top+10, cx, top+120, "#ef4444", 4);
+      drawArrow(simCtx, cx-5, top+28, cx-35, top+52, "rgba(239,68,68,0.65)", 3);
+      drawArrow(simCtx, cx+5, top+28, cx+35, top+52, "rgba(239,68,68,0.65)", 3);
+
+      const impactW = clamp(18 + S * 2200, 18, 110);
+      drawHammer(simCtx, cx - 48, 145, 96, 28, impactW, progress);
+
+      simCtx.fillStyle = "#4b5563";
+      simCtx.font = "16px Arial";
+      simCtx.fillText("Peamine mõju liigub alla löögi suunas.", x + 18, y + layout.boxH - 16);
+    }
+
+    function drawLiquid(progress) {
+      const x = layout.rightX;
+      const y = layout.topY;
+      const cx = x + layout.boxW / 2;
+      const surface = liquid.surfaceY;
+      const left = liquid.left;
+      const right = liquid.right;
+      const bottom = liquid.bottom;
+
+      // container
+      simCtx.strokeStyle = "#64748b";
+      simCtx.lineWidth = 4;
+      simCtx.beginPath();
+      simCtx.moveTo(left, y + 135);
+      simCtx.lineTo(left, bottom);
+      simCtx.lineTo(right, bottom);
+      simCtx.lineTo(right, y + 135);
+      simCtx.stroke();
+
+      // liquid fill
+      simCtx.fillStyle = "rgba(56,189,248,0.10)";
+      simCtx.fillRect(left, surface, right-left, bottom-surface);
+
+      // hydro bands
+      if (showHydro) {
+        const bands = 6;
+        for (let i = 0; i < bands; i++) {
+          const yy = surface + ((bottom - surface) / bands) * i;
+          const alpha = 0.03 + i * 0.02;
+          simCtx.fillStyle = `rgba(245,158,11,${alpha})`;
+          simCtx.fillRect(left, yy, right-left, (bottom - surface) / bands);
+        }
+
+        simCtx.fillStyle = "#b45309";
+        simCtx.font = "13px Arial";
+        simCtx.fillText("Rõhk suureneb sügavusega", left + 10, bottom - 12);
+      }
+
+      liquid.particles.forEach(p => {
+        simCtx.beginPath();
+        simCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        simCtx.fillStyle = "#38bdf8";
+        simCtx.fill();
+        simCtx.strokeStyle = "rgba(0,0,0,0.12)";
+        simCtx.stroke();
+      });
+
+      drawArrow(simCtx, cx, 125, cx, surface - 10, "#2563eb", 4);
+      drawArrow(simCtx, cx, surface + 10, cx, surface + 110, "#ef4444", 4);
+      drawArrow(simCtx, cx, surface + 8, cx - 88, surface + 52, "#ef4444", 4);
+      drawArrow(simCtx, cx, surface + 8, cx + 88, surface + 52, "#ef4444", 4);
+      drawArrow(simCtx, cx, surface + 8, cx - 34, surface - 22, "rgba(239,68,68,0.55)", 3);
+      drawArrow(simCtx, cx, surface + 8, cx + 34, surface - 22, "rgba(239,68,68,0.55)", 3);
+
+      simCtx.strokeStyle = "rgba(239,68,68,0.4)";
+      simCtx.lineWidth = 3;
+      for (let i = 0; i < 4; i++) {
+        simCtx.beginPath();
+        simCtx.arc(cx, surface + 18, 18 + i*22 + progress*8, Math.PI*0.12, Math.PI*0.88);
+        simCtx.stroke();
+      }
+
+      const impactW = clamp(18 + S * 2200, 18, 110);
+      drawHammer(simCtx, cx - 48, 145, 96, 28, impactW, progress);
+
+      simCtx.fillStyle = "#4b5563";
+      simCtx.font = "16px Arial";
+      simCtx.fillText("Rõhk levib vedelikus mitmes suunas.", x + 18, y + layout.boxH - 16);
+    }
+
+    function drawGraph() {
+      graphCtx.clearRect(0, 0, graphCanvas.width, graphCanvas.height);
+
+      const w = graphCanvas.width;
+      const h = graphCanvas.height;
+      const padL = 45;
+      const padR = 16;
+      const padT = 20;
+      const padB = 34;
+
+      graphCtx.fillStyle = "#ffffff";
+      graphCtx.fillRect(0, 0, w, h);
+
+      graphCtx.strokeStyle = "#cfd8e3";
+      graphCtx.lineWidth = 1;
+      graphCtx.strokeRect(0.5, 0.5, w-1, h-1);
+
+      const graphW = w - padL - padR;
+      const graphH = h - padT - padB;
+
+      // axes
+      graphCtx.strokeStyle = "#475569";
+      graphCtx.lineWidth = 2;
+      graphCtx.beginPath();
+      graphCtx.moveTo(padL, padT);
+      graphCtx.lineTo(padL, padT + graphH);
+      graphCtx.lineTo(padL + graphW, padT + graphH);
+      graphCtx.stroke();
+
+      graphCtx.fillStyle = "#334155";
+      graphCtx.font = "13px Arial";
+      graphCtx.fillText("p (Pa)", 8, 16);
+      graphCtx.fillText("h (m)", w - 34, h - 10);
+
+      const maxH = 2.0;
+      const maxP = density * g * maxH;
+
+      // grid
+      graphCtx.strokeStyle = "#e2e8f0";
+      graphCtx.lineWidth = 1;
+      for (let i = 1; i <= 4; i++) {
+        const y = padT + (graphH / 4) * i;
+        graphCtx.beginPath();
+        graphCtx.moveTo(padL, y);
+        graphCtx.lineTo(padL + graphW, y);
+        graphCtx.stroke();
+      }
+      for (let i = 1; i <= 4; i++) {
+        const x = padL + (graphW / 4) * i;
+        graphCtx.beginPath();
+        graphCtx.moveTo(x, padT);
+        graphCtx.lineTo(x, padT + graphH);
+        graphCtx.stroke();
+      }
+
+      // labels
+      for (let i = 0; i <= 4; i++) {
+        const depth = (maxH / 4) * i;
+        const x = padL + (graphW / 4) * i;
+        graphCtx.fillStyle = "#64748b";
+        graphCtx.font = "12px Arial";
+        graphCtx.fillText(depth.toFixed(1), x - 8, h - 14);
+      }
+      for (let i = 0; i <= 4; i++) {
+        const pVal = (maxP / 4) * (4 - i);
+        const y = padT + (graphH / 4) * i;
+        graphCtx.fillText(Math.round(pVal).toString(), 4, y + 4);
+      }
+
+      if (showHydro) {
+        graphCtx.strokeStyle = "#f59e0b";
+        graphCtx.lineWidth = 3;
+        graphCtx.beginPath();
+        for (let i = 0; i <= 100; i++) {
+          const depth = maxH * (i / 100);
+          const pVal = density * g * depth;
+          const x = padL + (depth / maxH) * graphW;
+          const y = padT + graphH - (pVal / maxP) * graphH;
+          if (i === 0) graphCtx.moveTo(x, y);
+          else graphCtx.lineTo(x, y);
+        }
+        graphCtx.stroke();
+
+        const currentH = Math.max(0, (liquid.bottom - liquid.surfaceY) / 100);
+        const currentP = density * g * currentH;
+        const px = padL + (currentH / maxH) * graphW;
+        const py = padT + graphH - (currentP / maxP) * graphH;
+
+        graphCtx.beginPath();
+        graphCtx.arc(px, py, 5, 0, Math.PI * 2);
+        graphCtx.fillStyle = "#d97706";
+        graphCtx.fill();
+
+        graphCtx.fillStyle = "#92400e";
+        graphCtx.font = "12px Arial";
+        graphCtx.fillText(`ρgh = ${currentP.toFixed(0)} Pa`, padL + 18, padT + 18);
+      } else {
+        graphCtx.fillStyle = "#64748b";
+        graphCtx.font = "14px Arial";
+        graphCtx.fillText("Hüdrostaatiline rõhk on peidetud.", 55, 120);
+      }
+    }
+
+    let lastTime = performance.now() / 1000;
+
+    function animate() {
+      const now = performance.now() / 1000;
+      const dt = Math.min(0.033, now - lastTime);
+      lastTime = now;
+
+      if (autoMode && !state.striking && now - lastAutoHit > 1.5) {
+        startStrike();
+        lastAutoHit = now;
+      }
+
+      const progress = getStrikeProgress(now);
+
+      if (progress > 0) {
+        applySolidStrike(progress);
+        applyLiquidStrike(progress);
+      }
+
+      updateSolid(dt);
+      updateLiquid(dt);
+      drawSim(progress);
+
+      requestAnimationFrame(animate);
+    }
+
+    forceSlider.addEventListener("input", updateValues);
+    areaSlider.addEventListener("input", updateValues);
+    durationSlider.addEventListener("input", updateValues);
+    viscositySlider.addEventListener("input", updateValues);
+    densitySlider.addEventListener("input", updateValues);
+    hydroToggle.addEventListener("change", updateValues);
+
+    hitBtn.addEventListener("click", startStrike);
+    autoBtn.addEventListener("click", () => {
+      autoMode = !autoMode;
+      autoBtn.textContent = autoMode ? "Auto kordus: sees" : "Auto kordus: väljas";
+    });
+    resetBtn.addEventListener("click", () => {
+      autoMode = false;
+      autoBtn.textContent = "Auto kordus: väljas";
+      resetAll();
+    });
+
+    resetAll();
+    animate();
+  </script>
+</body>
+</html>

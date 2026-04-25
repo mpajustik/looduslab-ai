@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ringliikumise dünaamika</title>
+  <style>
+    :root {
+      --bg: #f3f7fb;
+      --panel: #ffffff;
+      --panel-2: #eef4fb;
+      --text: #1f2937;
+      --muted: #5b6472;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --ok: #15803d;
+      --warn: #b45309;
+      --bad: #b91c1c;
+      --line: #cbd5e1;
+      --graph: #0f172a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f8fbff, #eef5fb 45%, #e8f1f8);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      color: #0f172a;
+    }
+    .lead {
+      color: var(--muted);
+      line-height: 1.55;
+      margin: 0 0 18px;
+      max-width: 1100px;
+    }
+    .top-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .top-tools label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    .tab-btn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      padding: 11px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 18px;
+    }
+    .card {
+      background: rgba(255,255,255,0.96);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 8px 28px rgba(15,23,42,0.06);
+    }
+    .controls h2, .view h2 {
+      margin-top: 0;
+      font-size: 23px;
+      color: #0f172a;
+    }
+    .control-group {
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(148,163,184,0.28);
+    }
+    .control-group:last-child { border-bottom: 0; }
+    label.range-label {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 14px;
+      margin-bottom: 6px;
+      color: var(--text);
+      font-weight: 700;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .metric {
+      background: var(--panel-2);
+      border: 1px solid rgba(148,163,184,0.25);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .metric .k {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+      min-height: 28px;
+    }
+    .metric .v {
+      font-size: 22px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .status {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+    .status.ok { background: #ecfdf3; color: var(--ok); border: 1px solid #86efac; }
+    .status.warn { background: #fff7ed; color: var(--warn); border: 1px solid #fdba74; }
+    .status.bad { background: #fef2f2; color: var(--bad); border: 1px solid #fca5a5; }
+    .canvases {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    canvas {
+      width: 100%;
+      background: #ffffff;
+      border: 1px solid rgba(148,163,184,0.32);
+      border-radius: 18px;
+      display: block;
+    }
+    .note, .formula, .concept, .tasks {
+      margin-top: 12px;
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text);
+    }
+    .formula, .concept, .tasks {
+      background: #f8fbff;
+      border: 1px solid rgba(148,163,184,0.25);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .formula { font-family: "Courier New", monospace; }
+    .tasks strong, .concept strong { color: #0f172a; }
+    .mini-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .mini-actions button {
+      padding: 9px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: white;
+      cursor: pointer;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .mini-actions button:hover { background: #f8fbff; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .dot { width: 12px; height: 12px; border-radius: 999px; display: inline-block; }
+    .question-box {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: var(--accent-soft);
+      border: 1px solid #93c5fd;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    @media (max-width: 1060px) {
+      .grid { grid-template-columns: 1fr; }
+      .canvases { grid-template-columns: 1fr; }
+      .mini-actions { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Ringliikumise dünaamika</h1>
+    <p class="lead">
+      Igas simulatsioonis on lisaks arvutustele ka
+      <strong>jõuvektorid</strong>, <strong>kriitiline piir</strong>, <strong>olukorra tõlgendus</strong> ja <strong>mõtlemisküsimused</strong>.
+      Eesmärk on näha mitte ainult vastust, vaid ka seda, <strong>miks nähtus juhtub</strong>.
+    </p>
+
+    <div class="top-tools">
+      <label><input type="checkbox" id="showVectors" checked> Näita jõuvektoreid</label>
+      <label><input type="checkbox" id="showHelp" checked> Näita selgitusi</label>
+      <label><input type="checkbox" id="showCritical" checked> Näita kriitilist piiri</label>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="auto">Auto kurvis</button>
+      <button class="tab-btn" data-tab="bucket">Ämber</button>
+      <button class="tab-btn" data-tab="washer">Pesumasin</button>
+    </div>
+
+    <section id="auto" class="panel active">
+      <div class="grid">
+        <div class="card controls">
+          <h2>Auto kurvis</h2>
+          <div class="control-group">
+            <label class="range-label">Auto mass <span id="autoMassVal">1200 kg</span></label>
+            <input id="autoMass" type="range" min="600" max="2500" step="50" value="1200">
+          </div>
+          <div class="control-group">
+            <label class="range-label">Kurvi raadius <span id="autoRadiusVal">50 m</span></label>
+            <input id="autoRadius" type="range" min="10" max="150" step="1" value="50">
+          </div>
+          <div class="control-group">
+            <label class="range-label">Kiirus <span id="autoSpeedVal">60 km/h</span></label>
+            <input id="autoSpeed" type="range" min="10" max="160" step="1" value="60">
+          </div>
+          <div class="control-group">
+            <label class="range-label">Hõõrdetegur μ <span id="autoMuVal">0.60</span></label>
+            <input id="autoMu" type="range" min="0.10" max="1.00" step="0.01" value="0.60">
+          </div>
+
+          <div class="mini-actions">
+            <button id="autoDry">Kuiv asfalt</button>
+            <button id="autoWet">Märg tee</button>
+            <button id="autoIce">Jäine tee</button>
+          </div>
+
+          <div class="metric-grid">
+            <div class="metric"><div class="k">Kesktõmbekiirendus</div><div class="v" id="autoA">5.56 m/s²</div></div>
+            <div class="metric"><div class="k">Vajalik kesktõmbejõud</div><div class="v" id="autoFc">6667 N</div></div>
+            <div class="metric"><div class="k">Max hõõrdejõud</div><div class="v" id="autoFf">7056 N</div></div>
+            <div class="metric"><div class="k">Maksimaalne ohutu kiirus</div><div class="v" id="autoVmax">62.1 km/h</div></div>
+          </div>
+
+          <div id="autoStatus" class="status ok">Auto püsib kurvil teel. Hõõrdejõust piisab.</div>
+          <div class="formula">a = v²/r &nbsp;&nbsp; F_k = mv²/r &nbsp;&nbsp; F_h,max = μmg</div>
+          <div id="autoConcept" class="concept"><strong>Põhiidee:</strong> auto tahab inertsi tõttu liikuda otse edasi. Kurvis hoiab teda ringjoonel ainult tee ja rehvi vaheline hõõrdejõud.</div>
+          <div id="autoQuestions" class="question-box"><strong>Mõtle:</strong> mis muutub ohtlikumaks — kas suurem kiirus, väiksem raadius või väiksem hõõrdetegur? Miks?</div>
+        </div>
+        <div class="card view">
+          <h2>Joonis ja graafik</h2>
+          <div class="canvases">
+            <canvas id="autoCanvas" width="860" height="520"></canvas>
+            <canvas id="autoGraph" width="380" height="520"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="dot" style="background:#2563eb"></i> vajalik jõud</span>
+            <span><i class="dot" style="background:#16a34a"></i> saadav hõõrdejõud / kesktõmbejõud</span>
+            <span><i class="dot" style="background:#f59e0b"></i> kiirus</span>
+            <span><i class="dot" style="background:#dc2626"></i> libisemise suund</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="bucket" class="panel">
+      <div class="grid">
+        <div class="card controls">
+          <h2>Ämber veega</h2>
+          <div class="control-group">
+            <label class="range-label">Ringliikumise raadius <span id="bucketRadiusVal">0.50 m</span></label>
+            <input id="bucketRadius" type="range" min="0.20" max="1.50" step="0.01" value="0.50">
+          </div>
+          <div class="control-group">
+            <label class="range-label">Vee mass <span id="bucketMassVal">1.0 kg</span></label>
+            <input id="bucketMass" type="range" min="0.2" max="5.0" step="0.1" value="1.0">
+          </div>
+          <div class="control-group">
+            <label class="range-label">Kiirus ringjoonel <span id="bucketSpeedVal">2.5 m/s</span></label>
+            <input id="bucketSpeed" type="range" min="0.5" max="8.0" step="0.1" value="2.5">
+          </div>
+          <div class="mini-actions">
+            <button id="bucketSlow">Liiga aeglane</button>
+            <button id="bucketEdge">Piiripealne</button>
+            <button id="bucketSafe">Ohutu kiirus</button>
+          </div>
+          <div class="metric-grid">
+            <div class="metric"><div class="k">Minimaalne kiirus tipus</div><div class="v" id="bucketVmin">2.21 m/s</div></div>
+            <div class="metric"><div class="k">Kesktõmbekiirendus</div><div class="v" id="bucketA">12.50 m/s²</div></div>
+            <div class="metric"><div class="k">Pinge tipus</div><div class="v" id="bucketTtop">2.69 N</div></div>
+            <div class="metric"><div class="k">Pinge all</div><div class="v" id="bucketTbottom">22.31 N</div></div>
+          </div>
+          <div id="bucketStatus" class="status ok">Vesi püsib ämbri sees ka ülemises punktis.</div>
+          <div class="formula">v_min = √(gr) &nbsp;&nbsp; a = v²/r &nbsp;&nbsp; T_tipus = m(v²/r − g)</div>
+          <div id="bucketConcept" class="concept"><strong>Põhiidee:</strong> ülemises punktis peab vesi saama piisava keskme poole suunatud kiirenduse. Kui kiirus on liiga väike, ei suuda raskusjõud üksi seda tagada ja vesi hakkab alla kukkuma.</div>
+          <div id="bucketQuestions" class="question-box"><strong>Mõtle:</strong> miks on kõige kriitilisem just ämbriringi ülemine punkt, mitte alumine punkt?</div>
+        </div>
+        <div class="card view">
+          <h2>Joonis ja graafik</h2>
+          <div class="canvases">
+            <canvas id="bucketCanvas" width="860" height="520"></canvas>
+            <canvas id="bucketGraph" width="380" height="520"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="dot" style="background:#16a34a"></i> kesktõmbejõu suund</span>
+            <span><i class="dot" style="background:#f59e0b"></i> raskusjõud</span>
+            <span><i class="dot" style="background:#a855f7"></i> pinge</span>
+            <span><i class="dot" style="background:#dc2626"></i> vee kukkumine</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="washer" class="panel">
+      <div class="grid">
+        <div class="card controls">
+          <h2>Pesumasina tsentrifuug</h2>
+          <div class="control-group">
+            <label class="range-label">Trumli raadius <span id="washerRadiusVal">0.25 m</span></label>
+            <input id="washerRadius" type="range" min="0.15" max="0.40" step="0.005" value="0.25">
+          </div>
+          <div class="control-group">
+            <label class="range-label">Pöörlemiskiirus <span id="washerRPMVal">1200 p/min</span></label>
+            <input id="washerRPM" type="range" min="200" max="1800" step="10" value="1200">
+          </div>
+          <div class="control-group">
+            <label class="range-label">Veetilga mass <span id="washerMassVal">10 g</span></label>
+            <input id="washerMass" type="range" min="1" max="50" step="1" value="10">
+          </div>
+          <div class="mini-actions">
+            <button id="washerLow">600 p/min</button>
+            <button id="washerMid">1000 p/min</button>
+            <button id="washerHigh">1400 p/min</button>
+          </div>
+          <div class="metric-grid">
+            <div class="metric"><div class="k">Nurkkiirus</div><div class="v" id="washerOmega">125.7 rad/s</div></div>
+            <div class="metric"><div class="k">Kesktõmbekiirendus</div><div class="v" id="washerA">3948 m/s²</div></div>
+            <div class="metric"><div class="k">g-jõud</div><div class="v" id="washerG">402 g</div></div>
+            <div class="metric"><div class="k">Vajalik jõud veetilgale</div><div class="v" id="washerF">39.5 N</div></div>
+          </div>
+          <div id="washerStatus" class="status warn">Kiirendus on väga suur. Seepärast eraldub vesi riietest efektiivselt.</div>
+          <div class="formula">f = p/min ÷ 60 &nbsp;&nbsp; ω = 2πf &nbsp;&nbsp; a = ω²r &nbsp;&nbsp; F = ma</div>
+          <div id="washerConcept" class="concept"><strong>Põhiidee:</strong> mida kiiremini trummel pöörleb, seda suurem peab olema jõud, mis hoiab veetilka ringliikumisel. Kui riie seda piisavalt ei hoia, liigub vesi läbi aukude välja.</div>
+          <div id="washerQuestions" class="question-box"><strong>Mõtle:</strong> miks ei suurene kiirendus pöörete arvu kasvades lineaarselt, vaid palju kiiremini?</div>
+        </div>
+        <div class="card view">
+          <h2>Joonis ja graafik</h2>
+          <div class="canvases">
+            <canvas id="washerCanvas" width="860" height="520"></canvas>
+            <canvas id="washerGraph" width="380" height="520"></canvas>
+          </div>
+          <div class="legend">
+            <span><i class="dot" style="background:#16a34a"></i> kesktõmbejõu suund</span>
+            <span><i class="dot" style="background:#f59e0b"></i> kiirus</span>
+            <span><i class="dot" style="background:#2563eb"></i> veetilgad</span>
+            <span><i class="dot" style="background:#dc2626"></i> väljapoole liikuv vesi</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const g = 9.81;
+    const state = { autoSlip: 0, bucketDrop: 0, washerSpray: 0 };
+    function fmt(num, digits = 2) {
+      return Number(num).toLocaleString('et-EE', { maximumFractionDigits: digits, minimumFractionDigits: digits });
+    }
+    function q(id){ return document.getElementById(id); }
+    function drawArrow(ctx, x1, y1, x2, y2, color, label) {
+      const head = 10;
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+      if (label) {
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText(label, x2 + 8, y2 - 8);
+      }
+    }
+    function drawGraphAxes(ctx, w, h, title, xLabel, yLabel) {
+      ctx.clearRect(0,0,w,h);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0,0,w,h);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.strokeRect(0.5,0.5,w-1,h-1);
+      ctx.fillStyle = '#0f172a';
+      ctx.font = 'bold 18px Arial';
+      ctx.fillText(title, 16, 28);
+      ctx.strokeStyle = '#64748b';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(45, h - 45); ctx.lineTo(w - 20, h - 45);
+      ctx.moveTo(45, h - 45); ctx.lineTo(45, 50);
+      ctx.stroke();
+      ctx.fillStyle = '#475569';
+      ctx.font = '13px Arial';
+      ctx.fillText(xLabel, w - 62, h - 18);
+      ctx.save();
+      ctx.translate(16, 84);
+      ctx.rotate(-Math.PI/2);
+      ctx.fillText(yLabel, 0, 0);
+      ctx.restore();
+    }
+    function plotLine(ctx, w, h, xs, ys, color, yMax) {
+      const left = 45, right = w - 20, top = 50, bottom = h - 45;
+      const xMax = Math.max(...xs);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      xs.forEach((x, i) => {
+        const px = left + (x / xMax) * (right - left);
+        const py = bottom - (ys[i] / yMax) * (bottom - top);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+      ctx.fillStyle = '#475569';
+      ctx.font = '12px Arial';
+      for (let i = 0; i <= 4; i++) {
+        const yVal = yMax * i / 4;
+        const y = bottom - (i / 4) * (bottom - top);
+        ctx.strokeStyle = 'rgba(148,163,184,0.16)';
+        ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+        ctx.fillText(fmt(yVal, 0), 6, y + 4);
+      }
+      for (let i = 0; i <= 4; i++) {
+        const xVal = xMax * i / 4;
+        const x = left + (i / 4) * (right - left);
+        ctx.strokeStyle = 'rgba(148,163,184,0.16)';
+        ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, bottom); ctx.stroke();
+        ctx.fillText(fmt(xVal, 0), x - 8, h - 25);
+      }
+    }
+    function plotHorizontal(ctx, w, h, yValue, yMax, color, label) {
+      const left = 45, right = w - 20, top = 50, bottom = h - 45;
+      const py = bottom - (yValue / yMax) * (bottom - top);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8,6]);
+      ctx.beginPath(); ctx.moveTo(left, py); ctx.lineTo(right, py); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = color;
+      ctx.font = 'bold 13px Arial';
+      ctx.fillText(label, 55, py - 8);
+    }
+    function plotMarker(ctx, w, h, xVal, yVal, xMax, yMax, color, label) {
+      const left = 45, right = w - 20, top = 50, bottom = h - 45;
+      const px = left + (xVal / xMax) * (right - left);
+      const py = bottom - (yVal / yMax) * (bottom - top);
+      ctx.fillStyle = color;
+      ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.font = 'bold 13px Arial';
+      ctx.fillText(label, px + 10, py - 10);
+    }
+
+    function updateAuto() {
+      const m = +q('autoMass').value;
+      const r = +q('autoRadius').value;
+      const vKmh = +q('autoSpeed').value;
+      const mu = +q('autoMu').value;
+      const v = vKmh / 3.6;
+      const a = v*v / r;
+      const Fc = m*a;
+      const Ff = mu*m*g;
+      const vmax = Math.sqrt(mu*g*r)*3.6;
+      q('autoMassVal').textContent = `${m} kg`;
+      q('autoRadiusVal').textContent = `${r} m`;
+      q('autoSpeedVal').textContent = `${vKmh} km/h`;
+      q('autoMuVal').textContent = mu.toFixed(2);
+      q('autoA').textContent = `${fmt(a,2)} m/s²`;
+      q('autoFc').textContent = `${fmt(Fc,0)} N`;
+      q('autoFf').textContent = `${fmt(Ff,0)} N`;
+      q('autoVmax').textContent = `${fmt(vmax,1)} km/h`;
+      const ratio = Fc/Ff;
+      if (ratio < 0.85) {
+        q('autoStatus').className = 'status ok';
+        q('autoStatus').textContent = 'Auto püsib kurvil teel. Hõõrdejõust piisab.';
+      } else if (ratio <= 1) {
+        q('autoStatus').className = 'status warn';
+        q('autoStatus').textContent = 'Piiripealne olukord. Väike kiiruse kasv või väiksem hõõrdumine võib põhjustada väljalibisemise.';
+      } else {
+        q('autoStatus').className = 'status bad';
+        q('autoStatus').textContent = 'Hõõrdejõust ei piisa. Auto hakkab kurvist välja libisema.';
+      }
+      state.autoSlip = Math.max(0, ratio - 1);
+
+      const c = q('autoCanvas').getContext('2d');
+      const w = q('autoCanvas').width, h = q('autoCanvas').height;
+      c.clearRect(0,0,w,h);
+      c.fillStyle = '#ffffff'; c.fillRect(0,0,w,h);
+      const cx = 450, cy = 260, roadR = 160;
+      c.strokeStyle = '#cbd5e1'; c.lineWidth = 70; c.beginPath(); c.arc(cx, cy, roadR, 0, Math.PI*2); c.stroke();
+      c.strokeStyle = '#94a3b8'; c.lineWidth = 2; c.setLineDash([10,8]); c.beginPath(); c.arc(cx, cy, roadR, 0, Math.PI*2); c.stroke(); c.setLineDash([]);
+      c.fillStyle = '#0f172a'; c.font = 'bold 16px Arial'; c.fillText('Kurvi keskpunkt', cx - 56, cy + 5);
+      c.beginPath(); c.arc(cx, cy, 5, 0, Math.PI*2); c.fill();
+      const ang = -Math.PI/4;
+      let carX = cx + roadR*Math.cos(ang);
+      let carY = cy + roadR*Math.sin(ang);
+      if (state.autoSlip > 0) {
+        carX += 70 * Math.cos(ang) * Math.min(state.autoSlip, 1.2);
+        carY += 70 * Math.sin(ang) * Math.min(state.autoSlip, 1.2);
+      }
+      c.save();
+      c.translate(carX, carY);
+      c.rotate(ang + Math.PI/2);
+      c.fillStyle = '#2563eb'; c.fillRect(-27,-15,54,30);
+      c.fillStyle = '#bfdbfe'; c.fillRect(-16,-10,32,20);
+      c.restore();
+      const tangentAngle = ang + Math.PI/2;
+      if (q('showVectors').checked) {
+        drawArrow(c, carX, carY, cx, cy, '#16a34a', 'F_k');
+        drawArrow(c, carX, carY, carX + 95*Math.cos(tangentAngle), carY + 95*Math.sin(tangentAngle), '#f59e0b', 'v');
+        if (state.autoSlip > 0) drawArrow(c, carX, carY, carX + 90*Math.cos(ang), carY + 90*Math.sin(ang), '#dc2626', 'libisemine');
+      }
+      c.fillStyle = '#334155'; c.font = '15px Arial';
+      c.fillText(`v = ${vKmh} km/h`, 28, 34);
+      c.fillText(`μ = ${mu.toFixed(2)}`, 28, 58);
+      c.fillText(`F_vajalik = ${fmt(Fc,0)} N`, 28, 82);
+      c.fillText(`F_h,max = ${fmt(Ff,0)} N`, 28, 106);
+      c.fillText('Mida suurem on kiirus, seda suurem on vajalik kesktõmbejõud.', 28, 490);
+
+      const gctx = q('autoGraph').getContext('2d');
+      const gw = q('autoGraph').width, gh = q('autoGraph').height;
+      drawGraphAxes(gctx, gw, gh, 'Jõud sõltub kiirusest', 'v (km/h)', 'F (N)');
+      const xs=[], ys=[];
+      for (let s=0; s<=160; s+=4){ const ms=s/3.6; xs.push(s); ys.push(m*ms*ms/r); }
+      const yMax = Math.max(...ys, Ff)*1.15;
+      plotLine(gctx, gw, gh, xs, ys, '#2563eb', yMax);
+      if (q('showCritical').checked) plotHorizontal(gctx, gw, gh, Ff, yMax, '#16a34a', 'F_h,max');
+      plotMarker(gctx, gw, gh, vKmh, Fc, 160, yMax, '#f59e0b', 'Praegu');
+    }
+
+    function updateBucket() {
+      const r = +q('bucketRadius').value;
+      const m = +q('bucketMass').value;
+      const v = +q('bucketSpeed').value;
+      const vmin = Math.sqrt(g*r);
+      const a = v*v/r;
+      const Ttop = m*(a-g);
+      const Tbottom = m*(a+g);
+      q('bucketRadiusVal').textContent = `${fmt(r,2)} m`;
+      q('bucketMassVal').textContent = `${fmt(m,1)} kg`;
+      q('bucketSpeedVal').textContent = `${fmt(v,1)} m/s`;
+      q('bucketVmin').textContent = `${fmt(vmin,2)} m/s`;
+      q('bucketA').textContent = `${fmt(a,2)} m/s²`;
+      q('bucketTtop').textContent = `${fmt(Ttop,2)} N`;
+      q('bucketTbottom').textContent = `${fmt(Tbottom,2)} N`;
+      if (v > 1.1*vmin) {
+        q('bucketStatus').className = 'status ok';
+        q('bucketStatus').textContent = 'Vesi püsib ämbri sees ka ülemises punktis.';
+      } else if (v >= vmin) {
+        q('bucketStatus').className = 'status warn';
+        q('bucketStatus').textContent = 'Piiripealne olukord. Väike aeglustumine võib panna vee välja kukkuma.';
+      } else {
+        q('bucketStatus').className = 'status bad';
+        q('bucketStatus').textContent = 'Kiirus on liiga väike. Ülemises punktis hakkab vesi ämbrist välja kukkuma.';
+      }
+      state.bucketDrop = Math.max(0, 1 - v/vmin);
+
+      const c = q('bucketCanvas').getContext('2d');
+      const w = q('bucketCanvas').width, h = q('bucketCanvas').height;
+      c.clearRect(0,0,w,h); c.fillStyle='#ffffff'; c.fillRect(0,0,w,h);
+      const cx=430, cy=260, R=160;
+      c.strokeStyle = '#94a3b8'; c.lineWidth = 2.5; c.beginPath(); c.arc(cx, cy, R, 0, Math.PI*2); c.stroke();
+      c.beginPath(); c.arc(cx, cy, 4, 0, Math.PI*2); c.fillStyle = '#0f172a'; c.fill();
+      c.fillStyle = '#0f172a'; c.font = 'bold 16px Arial'; c.fillText('Pöörlemiskeskus', cx - 52, cy - 12);
+      const pos = -Math.PI/2;
+      const bx = cx + R*Math.cos(pos), by = cy + R*Math.sin(pos);
+      c.save(); c.translate(bx, by); c.rotate(pos + Math.PI/2);
+      c.fillStyle = '#2563eb'; c.fillRect(-30,-24,60,32);
+      c.fillStyle = (v >= vmin) ? '#60a5fa' : '#ef4444';
+      let waterY = -10;
+      if (state.bucketDrop > 0) waterY += 18 * Math.min(state.bucketDrop*2, 1.5);
+      c.fillRect(-24, waterY, 48, 12);
+      c.strokeStyle = '#64748b'; c.lineWidth = 2; c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -74); c.stroke();
+      c.restore();
+      if (q('showVectors').checked) {
+        drawArrow(c, bx, by, cx, cy, '#16a34a', 'F_k');
+        drawArrow(c, bx, by, bx, by + 92, '#f59e0b', 'mg');
+        if (Ttop > 0) drawArrow(c, bx, by, bx, by + 62, '#a855f7', 'T');
+        if (state.bucketDrop > 0) drawArrow(c, bx, by+10, bx, by+92, '#dc2626', 'kukkub');
+      }
+      c.fillStyle = '#334155'; c.font = '15px Arial';
+      c.fillText(`v = ${fmt(v,1)} m/s`, 28, 34);
+      c.fillText(`v_min = ${fmt(vmin,2)} m/s`, 28, 58);
+      c.fillText(`T_tipus = ${fmt(Ttop,2)} N`, 28, 82);
+      c.fillText('Kriitiline on ülemine punkt, sest seal peab vesi ikka keskme poole liikuma.', 28, 490);
+
+      const gctx = q('bucketGraph').getContext('2d');
+      const gw = q('bucketGraph').width, gh = q('bucketGraph').height;
+      drawGraphAxes(gctx, gw, gh, 'Pinge tipus', 'v (m/s)', 'T (N)');
+      const xs=[], ys=[];
+      for (let s=0; s<=8.0; s+=0.2){ xs.push(s); ys.push(Math.max(0, m*(s*s/r-g))); }
+      const yMax = Math.max(...ys, 10)*1.15;
+      plotLine(gctx, gw, gh, xs, ys, '#2563eb', yMax);
+      plotMarker(gctx, gw, gh, v, Math.max(0,Ttop), 8.0, yMax, '#f59e0b', 'Praegu');
+      if (q('showCritical').checked) {
+        const left=45,right=gw-20,top=50,bottom=gh-45;
+        const x = left + (vmin/8.0)*(right-left);
+        gctx.strokeStyle = '#16a34a'; gctx.setLineDash([8,6]); gctx.beginPath(); gctx.moveTo(x,top); gctx.lineTo(x,bottom); gctx.stroke(); gctx.setLineDash([]);
+        gctx.fillStyle = '#16a34a'; gctx.font = 'bold 13px Arial'; gctx.fillText('v_min', x + 6, 68);
+      }
+    }
+
+    function updateWasher() {
+      const r = +q('washerRadius').value;
+      const rpm = +q('washerRPM').value;
+      const m = +q('washerMass').value / 1000;
+      const f = rpm/60;
+      const omega = 2*Math.PI*f;
+      const a = omega*omega*r;
+      const gforce = a/g;
+      const F = m*a;
+      q('washerRadiusVal').textContent = `${fmt(r,3)} m`;
+      q('washerRPMVal').textContent = `${rpm} p/min`;
+      q('washerMassVal').textContent = `${q('washerMass').value} g`;
+      q('washerOmega').textContent = `${fmt(omega,1)} rad/s`;
+      q('washerA').textContent = `${fmt(a,0)} m/s²`;
+      q('washerG').textContent = `${fmt(gforce,0)} g`;
+      q('washerF').textContent = `${fmt(F,1)} N`;
+      if (gforce < 100) {
+        q('washerStatus').className = 'status ok';
+        q('washerStatus').textContent = 'Kiirendus on märgatav, kuid võrreldes tugeva tsentrifuugiga veel mõõdukas.';
+      } else if (gforce < 250) {
+        q('washerStatus').className = 'status warn';
+        q('washerStatus').textContent = 'Kiirendus on suur. Vee eraldumine on juba tõhus.';
+      } else {
+        q('washerStatus').className = 'status bad';
+        q('washerStatus').textContent = 'Kiirendus on väga suur. Seepärast eraldub vesi riietest väga efektiivselt.';
+      }
+      state.washerSpray = Math.min(1.6, gforce / 250);
+
+      const c = q('washerCanvas').getContext('2d');
+      const w = q('washerCanvas').width, h = q('washerCanvas').height;
+      c.clearRect(0,0,w,h); c.fillStyle='#ffffff'; c.fillRect(0,0,w,h);
+      const cx=430, cy=260, R=150;
+      c.fillStyle = '#f8fafc'; c.fillRect(245, 60, 350, 390);
+      c.strokeStyle = '#94a3b8'; c.lineWidth = 3; c.beginPath(); c.arc(cx, cy, R, 0, Math.PI*2); c.stroke();
+      c.beginPath(); c.arc(cx, cy, 82, 0, Math.PI*2); c.strokeStyle = '#cbd5e1'; c.stroke();
+      for (let i=0;i<18;i++) {
+        const ang=(Math.PI*2/18)*i + rpm/200;
+        const hx=cx + (R-10)*Math.cos(ang), hy=cy + (R-10)*Math.sin(ang);
+        c.beginPath(); c.arc(hx,hy,4,0,Math.PI*2); c.fillStyle='#94a3b8'; c.fill();
+      }
+      for (let i=0;i<8;i++) {
+        const ang = i*0.82 + rpm/320;
+        const rr = 48 + i*12;
+        const x = cx + rr*Math.cos(ang), y = cy + rr*Math.sin(ang);
+        c.beginPath(); c.arc(x,y,12,0,Math.PI*2); c.fillStyle='#60a5fa'; c.fill();
+      }
+      if (state.washerSpray > 0.55) {
+        for (let i=0;i<7;i++) {
+          const ang = i*0.55 + rpm/280;
+          const sx = cx + (R-6)*Math.cos(ang);
+          const sy = cy + (R-6)*Math.sin(ang);
+          const ex = cx + (R + 15 + 25*state.washerSpray)*Math.cos(ang);
+          const ey = cy + (R + 15 + 25*state.washerSpray)*Math.sin(ang);
+          c.strokeStyle = 'rgba(220,38,38,0.55)'; c.lineWidth = 2;
+          c.beginPath(); c.moveTo(sx,sy); c.lineTo(ex,ey); c.stroke();
+        }
+      }
+      const dx = cx + 90*Math.cos(Math.PI/6 + rpm/300), dy = cy + 90*Math.sin(Math.PI/6 + rpm/300);
+      if (q('showVectors').checked) {
+        drawArrow(c, dx, dy, cx, cy, '#16a34a', 'F_k');
+        drawArrow(c, dx, dy, dx + 72*Math.cos(Math.PI/6 + rpm/300 + Math.PI/2), dy + 72*Math.sin(Math.PI/6 + rpm/300 + Math.PI/2), '#f59e0b', 'v');
+      }
+      c.fillStyle = '#334155'; c.font = '15px Arial';
+      c.fillText(`Pöörlemiskiirus = ${rpm} p/min`, 28, 34);
+      c.fillText(`a = ${fmt(a,0)} m/s²`, 28, 58);
+      c.fillText(`≈ ${fmt(gforce,0)} g`, 28, 82);
+      c.fillText('Kiirendus kasvab väga kiiresti, sest a sõltub nurkkiirusest ruudus.', 28, 490);
+
+      const gctx = q('washerGraph').getContext('2d');
+      const gw=q('washerGraph').width, gh=q('washerGraph').height;
+      drawGraphAxes(gctx, gw, gh, 'Kiirendus sõltub pööretest', 'p/min', 'a (m/s²)');
+      const xs=[], ys=[];
+      for (let s=0;s<=1800;s+=30){ const ff=s/60; const om=2*Math.PI*ff; xs.push(s); ys.push(om*om*r); }
+      const yMax=Math.max(...ys)*1.08;
+      plotLine(gctx, gw, gh, xs, ys, '#2563eb', yMax);
+      plotMarker(gctx, gw, gh, rpm, a, 1800, yMax, '#f59e0b', 'Praegu');
+      if (q('showCritical').checked) plotHorizontal(gctx, gw, gh, 100*g, yMax, '#16a34a', '100 g');
+    }
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        q(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    [q('showVectors'), q('showHelp'), q('showCritical')].forEach(el => el.addEventListener('input', () => { updateAuto(); updateBucket(); updateWasher(); toggleHelp(); }));
+    ['autoMass','autoRadius','autoSpeed','autoMu'].forEach(id => q(id).addEventListener('input', updateAuto));
+    ['bucketRadius','bucketMass','bucketSpeed'].forEach(id => q(id).addEventListener('input', updateBucket));
+    ['washerRadius','washerRPM','washerMass'].forEach(id => q(id).addEventListener('input', updateWasher));
+
+    q('autoDry').onclick = () => { q('autoMu').value = 0.8; updateAuto(); };
+    q('autoWet').onclick = () => { q('autoMu').value = 0.4; updateAuto(); };
+    q('autoIce').onclick = () => { q('autoMu').value = 0.15; updateAuto(); };
+    q('bucketSlow').onclick = () => { q('bucketSpeed').value = 1.5; updateBucket(); };
+    q('bucketEdge').onclick = () => { q('bucketSpeed').value = fmt(Math.sqrt(g*(+q('bucketRadius').value)),1).replace(',','.'); updateBucket(); };
+    q('bucketSafe').onclick = () => { q('bucketSpeed').value = 3.2; updateBucket(); };
+    q('washerLow').onclick = () => { q('washerRPM').value = 600; updateWasher(); };
+    q('washerMid').onclick = () => { q('washerRPM').value = 1000; updateWasher(); };
+    q('washerHigh').onclick = () => { q('washerRPM').value = 1400; updateWasher(); };
+
+    function toggleHelp() {
+      const show = q('showHelp').checked ? 'block' : 'none';
+      ['autoConcept','autoQuestions','bucketConcept','bucketQuestions','washerConcept','washerQuestions'].forEach(id => q(id).style.display = show);
+    }
+
+    updateAuto();
+    updateBucket();
+    updateWasher();
+    toggleHelp();
+  </script>
+</body>
+</html>

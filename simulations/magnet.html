@@ -1,0 +1,1430 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Magneti täiustatud koolitunni simulatsioon</title>
+  <style>
+    :root {
+      --bg: #f3f7fb;
+      --panel: #ffffff;
+      --border: #d7e2ee;
+      --text: #1f2937;
+      --muted: #5f6f82;
+      --blue: #2563eb;
+      --red: #dc2626;
+      --green: #15803d;
+      --orange: #d97706;
+      --purple: #7c3aed;
+      --shadow: 0 10px 28px rgba(0,0,0,.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .app {
+      display: grid;
+      grid-template-columns: 360px 1fr 380px;
+      gap: 14px;
+      min-height: 100vh;
+      padding: 14px;
+    }
+    .panel, .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+    .panel {
+      padding: 16px;
+      overflow: auto;
+    }
+    .center {
+      display: grid;
+      grid-template-rows: auto auto auto auto;
+      gap: 6px;
+      min-width: 0;
+      align-items: start; /* vältida kaartide venimist */
+      align-content: start; /* hoiab sisu üleval */
+    }
+    .card {
+      padding: 8px;
+      height: auto; /* keelab automaatse vertikaalse venimise */
+      align-self: start;
+    }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    h2 { margin: 14px 0 10px; font-size: 18px; }
+    h3 { margin: 12px 0 8px; font-size: 15px; }
+    p { margin: 6px 0; line-height: 1.45; }
+    .muted, .small { color: var(--muted); }
+    .small { font-size: 13px; }
+    .group {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background: #fbfdff;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin: 8px 0;
+    }
+    .checkRow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0;
+      font-size: 14px;
+    }
+    input[type="range"], input[type="text"], input[type="number"], textarea, select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+      background: #fff;
+      color: var(--text);
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    button, .ghostButton {
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 10px;
+      padding: 9px 11px;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--text);
+    }
+    button:hover, .ghostButton:hover, select:hover { background: #f6f9fd; }
+    .btnRow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .pill {
+      display: inline-block;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      margin-right: 6px;
+      margin-bottom: 6px;
+      border: 1px solid var(--border);
+      background: #f8fbff;
+    }
+    .pill.blue { color: #1d4ed8; }
+    .pill.red { color: #b91c1c; }
+    .pill.green { color: #166534; }
+    .pill.orange { color: #b45309; }
+    .pill.purple { color: #6d28d9; }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      background: linear-gradient(180deg,#ffffff,#f7fbff);
+      margin: 0;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+    .scoreBox {
+      display: grid;
+      grid-template-columns: repeat(2,1fr);
+      gap: 8px;
+    }
+    .scoreItem {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fafcff;
+    }
+    .task {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      margin: 8px 0;
+      background: #fcfeff;
+    }
+    .ok { color: var(--green); font-weight: 700; }
+    .bad { color: var(--red); font-weight: 700; }
+    .mid { color: var(--orange); font-weight: 700; }
+    .graphWrap { height: 160px; position: relative; margin: 0; padding: 0; }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .hidden { display: none !important; }
+    .timerLarge {
+      font-size: 28px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .sectionTitleRow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .miniGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .lessonPlan {
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fcfeff;
+    }
+    @media (max-width: 1500px) {
+      .app { grid-template-columns: 360px 1fr; }
+      .rightPanel { grid-column: 1 / -1; }
+    }
+    @media (max-width: 1100px) {
+      .app { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel">
+      <h1>Magneti koolitunni versioon</h1>
+      <p class="muted">Täiustatud õppeversioon: kaks magnetit, domeenid, neutraalne ala, kompass, graafik, temperatuur, Curie demo, ülesanded, punktid, taimer ja töölehe eksport.</p>
+
+      <div class="group">
+        <h2>Vaated</h2>
+        <div class="checkRow"><input type="checkbox" id="showHeat" checked><label for="showHeat">Välja tugevuse kaart</label></div>
+        <div class="checkRow"><input type="checkbox" id="showFieldLines" checked><label for="showFieldLines">Jõujooned</label></div>
+        <div class="checkRow"><input type="checkbox" id="showVectors" checked><label for="showVectors">Vektorid</label></div>
+        <div class="checkRow"><input type="checkbox" id="showCompass" checked><label for="showCompass">Kompass</label></div>
+        <div class="checkRow"><input type="checkbox" id="showIronFilings"><label for="showIronFilings">Rauapuru vaade</label></div>
+        <div class="checkRow"><input type="checkbox" id="showDomains" checked><label for="showDomains">Domeenid rauas</label></div>
+        <div class="checkRow"><input type="checkbox" id="showNeutral" checked><label for="showNeutral">Neutraalne ala</label></div>
+        <div class="checkRow"><input type="checkbox" id="showForce" checked><label for="showForce">Jõud</label></div>
+        <div class="checkRow"><input type="checkbox" id="animateIron" checked><label for="animateIron">Raua liikumine</label></div>
+        <div class="checkRow"><input type="checkbox" id="twoMagnets"><label for="twoMagnets">Kasuta 2 magnetit</label></div>
+      </div>
+
+      <div class="group">
+        <h2>Stseenid</h2>
+        <div class="btnRow">
+          <button id="sceneSingleBtn">1 magnet + raud</button>
+          <button id="sceneNNBtn">2 magnetit N–N</button>
+          <button id="sceneNSBtn">2 magnetit N–S</button>
+          <button id="sceneShieldBtn">Magnet + raudplaat</button>
+          <button id="sceneCurieBtn">Curie demo</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Magnet A</h2>
+        <div class="row"><label for="magStrengthA">Tugevus</label><strong id="magStrengthAVal">1.00</strong></div>
+        <input type="range" id="magStrengthA" min="0.3" max="2.5" step="0.01" value="1.00">
+        <div class="row"><label for="magAngleA">Nurk</label><strong id="magAngleAVal">0°</strong></div>
+        <input type="range" id="magAngleA" min="-180" max="180" step="1" value="0">
+        <div class="row"><label for="magLengthA">Pikkus</label><strong id="magLengthAVal">180</strong></div>
+        <input type="range" id="magLengthA" min="100" max="260" step="1" value="180">
+        <div class="row"><label for="magThicknessA">Paksus</label><strong id="magThicknessAVal">42</strong></div>
+        <input type="range" id="magThicknessA" min="24" max="70" step="1" value="42">
+        <div class="btnRow">
+          <button id="flipA">Vaheta N/S</button>
+          <button id="centerA">Keskele vasakule</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Magnet B</h2>
+        <div class="row"><label for="magStrengthB">Tugevus</label><strong id="magStrengthBVal">1.00</strong></div>
+        <input type="range" id="magStrengthB" min="0.3" max="2.5" step="0.01" value="1.00">
+        <div class="row"><label for="magAngleB">Nurk</label><strong id="magAngleBVal">0°</strong></div>
+        <input type="range" id="magAngleB" min="-180" max="180" step="1" value="0">
+        <div class="row"><label for="magLengthB">Pikkus</label><strong id="magLengthBVal">180</strong></div>
+        <input type="range" id="magLengthB" min="100" max="260" step="1" value="180">
+        <div class="row"><label for="magThicknessB">Paksus</label><strong id="magThicknessBVal">42</strong></div>
+        <input type="range" id="magThicknessB" min="24" max="70" step="1" value="42">
+        <div class="btnRow">
+          <button id="flipB">Vaheta N/S</button>
+          <button id="centerB">Keskele paremale</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Rauast ese</h2>
+        <div class="checkRow"><input type="checkbox" id="ironEnabled" checked><label for="ironEnabled">Rauaobjekt aktiivne</label></div>
+        <div class="row"><label for="ironWidth">Laius</label><strong id="ironWidthVal">120</strong></div>
+        <input type="range" id="ironWidth" min="50" max="240" step="1" value="120">
+        <div class="row"><label for="ironHeight">Kõrgus</label><strong id="ironHeightVal">48</strong></div>
+        <input type="range" id="ironHeight" min="24" max="120" step="1" value="48">
+        <div class="row"><label for="ironSus">Magnetiseeruvus</label><strong id="ironSusVal">1.20</strong></div>
+        <input type="range" id="ironSus" min="0.2" max="2.5" step="0.01" value="1.20">
+        <div class="row"><label for="ironDamping">Pidurdus</label><strong id="ironDampingVal">0.93</strong></div>
+        <input type="range" id="ironDamping" min="0.80" max="0.99" step="0.01" value="0.93">
+        <div class="btnRow">
+          <button id="resetIron">Taasta raud</button>
+          <button id="moveIron">Pane keskele</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Temperatuur ja Curie efekt</h2>
+        <div class="row"><label for="temperature">Temperatuur</label><strong id="temperatureVal">20 °C</strong></div>
+        <input type="range" id="temperature" min="0" max="1000" step="1" value="20">
+        <div class="row"><label for="curieTemp">Curie temperatuur</label><strong id="curieTempVal">770 °C</strong></div>
+        <input type="range" id="curieTemp" min="300" max="1000" step="1" value="770">
+        <p class="small">Kui temperatuur läheneb või ületab Curie temperatuuri, muutub domeenide joondus nõrgaks ja tõmbejõud väheneb.</p>
+      </div>
+    </aside>
+
+    <main class="center">
+      <section class="card">
+        <div class="toolbar">
+          <span class="pill blue">N poolus</span>
+          <span class="pill red">S poolus</span>
+          <span class="pill.green">Domeenid</span>
+          <span class="pill orange">Neutraalne ala</span>
+          <span class="pill purple">Kompass / mõõtmine</span>
+        </div>
+        <p class="muted">Lohista magneteid ja rauda. Tavaline klõps seab mõõtepunkti. Shift-klõps seab graafiku alguspunkti, Alt-klõps lõpp-punkti.</p>
+      </section>
+
+      <section class="card" style="padding-bottom:4px;">
+        <canvas id="mainCanvas" width="1200" height="560"></canvas>
+        <div class="legend">
+          <span><i class="dot" style="background:#1d4ed8"></i> N poolus</span>
+          <span><i class="dot" style="background:#dc2626"></i> S poolus</span>
+          <span><i class="dot" style="background:#64748b"></i> Rauast ese</span>
+          <span><i class="dot" style="background:#15803d"></i> Domeenide joondus</span>
+          <span><i class="dot" style="background:#f59e0b"></i> Väga nõrk väli</span>
+          <span><i class="dot" style="background:#7c3aed"></i> Kompass / mõõtmine</span>
+        </div>
+      </section>
+
+      <section class="card" style="padding-top:4px; margin-top:0;">
+        <div class="sectionTitleRow">
+          <h2>Välja tugevuse graafik piki valitud joont</h2>
+          <div class="small">Shift-klõps = alguspunkt, Alt-klõps = lõpp-punkt</div>
+        </div>
+        <div class="graphWrap">
+          <canvas id="graphCanvas" width="1100" height="140"></canvas>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Koolitunni kasutus</h2>
+        <div class="miniGrid">
+          <div class="lessonPlan">
+            <strong>1. Sissejuhatus</strong>
+            <p class="small">Näita 1 magneti välja. Uuri, kus on väli tugevam ja mis suunas jõujooned kulgevad.</p>
+          </div>
+          <div class="lessonPlan">
+            <strong>2. Raua magnetiseerumine</strong>
+            <p class="small">Lohista raud magnetile lähemale ja jälgi domeenide joondumist ning jõunoolt.</p>
+          </div>
+          <div class="lessonPlan">
+            <strong>3. Kaks magnetit</strong>
+            <p class="small">Võrdle N–N ja N–S juhtusid. Otsi neutraalse välja alasid ja välja superpositsiooni.</p>
+          </div>
+          <div class="lessonPlan">
+            <strong>4. Temperatuuri mõju</strong>
+            <p class="small">Tõsta temperatuuri ja vaata, kuidas domeenid ning tõmme vähenevad Curie temperatuurile lähenedes.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="panel rightPanel">
+      <div class="group">
+        <h2>Mõõtmine</h2>
+        <div class="scoreBox">
+          <div class="scoreItem"><strong>x:</strong><br><span id="probeX">–</span></div>
+          <div class="scoreItem"><strong>y:</strong><br><span id="probeY">–</span></div>
+          <div class="scoreItem"><strong>|B|:</strong><br><span id="probeB">–</span></div>
+          <div class="scoreItem"><strong>suund:</strong><br><span id="probeDir">–</span></div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="sectionTitleRow">
+          <h2>Testirežiim</h2>
+          <label class="checkRow" style="margin:0;"><input type="checkbox" id="testMode"> Test ON</label>
+        </div>
+        <p class="small">Testirežiimis peidetakse osa abivihjeid. Õpilane peab nähtustest ise järeldused tegema.</p>
+        <div class="btnRow" id="testTools">
+          <button id="newTaskSet">Uued ülesanded</button>
+          <button id="checkAnswers">Kontrolli vastuseid</button>
+          <button id="showSolutions">Näita vihjeid</button>
+          <button id="exportWorksheetBtn">Ekspordi tööleht</button>
+        </div>
+        <div id="tasksBox"></div>
+      </div>
+
+      <div class="group">
+        <div class="sectionTitleRow">
+          <h2>Õpilasrežiim</h2>
+          <label class="checkRow" style="margin:0;"><input type="checkbox" id="studentMode"> Õpilasvaade</label>
+        </div>
+        <p class="small">Õpilasrežiimis peidetakse osa juhtnuppe ja tehnilisi sätteid, et õpilane keskenduks vaatlemisele, katsetamisele ja vastamisele.</p>
+      </div>
+
+      <div class="group">
+        <h2>Praktiliste katsete juhend</h2>
+        <div class="row"><label for="practicalGuideSelect">Vali katse</label><select id="practicalGuideSelect">
+          <option value="domains">Raua domeenide joondumine</option>
+          <option value="poles">Poolused ja jõujooned</option>
+          <option value="nnns">N–N ja N–S võrdlus</option>
+          <option value="curie">Temperatuuri ja Curie mõju</option>
+          <option value="shield">Rauaplaadi mõju väljale</option>
+        </select></div>
+        <div id="practicalGuideBox" class="lessonPlan"></div>
+      </div>
+
+      <div class="group">
+        <div class="sectionTitleRow">
+          <h2>Taimer ja punktid</h2>
+          <label class="checkRow" style="margin:0;"><input type="checkbox" id="teacherMode"> Õpetajarežiim</label>
+        </div>
+        <div class="scoreBox">
+          <div class="scoreItem"><strong>Punktid</strong><br><span id="scoreNow">0 / 0</span></div>
+          <div class="scoreItem"><strong>Täpsus</strong><br><span id="scorePct">0%</span></div>
+          <div class="scoreItem"><strong>Taimer</strong><br><span class="timerLarge" id="timerDisplay">10:00</span></div>
+          <div class="scoreItem"><strong>Staatus</strong><br><span id="timerState">Seisab</span></div>
+        </div>
+        <div class="row"><label for="timerMinutes">Aeg minutites</label><input id="timerMinutes" type="number" min="1" max="90" value="10"></div>
+        <div class="btnRow">
+          <button id="startTimerBtn">Käivita</button>
+          <button id="pauseTimerBtn">Paus</button>
+          <button id="resetTimerBtn">Nulli</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Õpetaja märkmed</h2>
+        <textarea id="teacherNotes" placeholder="Siia võid kirjutada tunni tähelepanekud või juhised..."></textarea>
+        <div class="btnRow">
+          <button id="saveNotesBtn">Salvesta märkmed</button>
+          <button id="loadNotesBtn">Laadi märkmed</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>Olulised mõisted</h2>
+        <p class="small"><strong>Superpositsioon:</strong> kahe magneti väljad liituvad.</p>
+        <p class="small"><strong>Neutraalne ala:</strong> piirkond, kus välja tugevus on väga väike.</p>
+        <p class="small"><strong>Domeenid:</strong> väikesed piirkonnad, mille suund korrastub välise välja mõjul.</p>
+        <p class="small"><strong>Tõmme:</strong> raua sees tekib indutseeritud magnetiseerumine.</p>
+        <p class="small"><strong>Curie temperatuur:</strong> sellest kõrgemal temperatuuril kaob ferromagnetiline korrastus.</p>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const mainCanvas = document.getElementById("mainCanvas");
+    const ctx = mainCanvas.getContext("2d");
+    const graphCanvas = document.getElementById("graphCanvas");
+    const gctx = graphCanvas.getContext("2d");
+
+    function byId(id){ return document.getElementById(id); }
+
+    const ui = {
+      studentMode: byId("studentMode"),
+      practicalGuideSelect: byId("practicalGuideSelect"),
+      practicalGuideBox: byId("practicalGuideBox"),
+      showHeat: byId("showHeat"),
+      showFieldLines: byId("showFieldLines"),
+      showVectors: byId("showVectors"),
+      showCompass: byId("showCompass"),
+      showIronFilings: byId("showIronFilings"),
+      showDomains: byId("showDomains"),
+      showNeutral: byId("showNeutral"),
+      showForce: byId("showForce"),
+      animateIron: byId("animateIron"),
+      twoMagnets: byId("twoMagnets"),
+      ironEnabled: byId("ironEnabled"),
+      testMode: byId("testMode"),
+      teacherMode: byId("teacherMode"),
+
+      magStrengthA: byId("magStrengthA"),
+      magStrengthAVal: byId("magStrengthAVal"),
+      magAngleA: byId("magAngleA"),
+      magAngleAVal: byId("magAngleAVal"),
+      magLengthA: byId("magLengthA"),
+      magLengthAVal: byId("magLengthAVal"),
+      magThicknessA: byId("magThicknessA"),
+      magThicknessAVal: byId("magThicknessAVal"),
+
+      magStrengthB: byId("magStrengthB"),
+      magStrengthBVal: byId("magStrengthBVal"),
+      magAngleB: byId("magAngleB"),
+      magAngleBVal: byId("magAngleBVal"),
+      magLengthB: byId("magLengthB"),
+      magLengthBVal: byId("magLengthBVal"),
+      magThicknessB: byId("magThicknessB"),
+      magThicknessBVal: byId("magThicknessBVal"),
+
+      ironWidth: byId("ironWidth"),
+      ironWidthVal: byId("ironWidthVal"),
+      ironHeight: byId("ironHeight"),
+      ironHeightVal: byId("ironHeightVal"),
+      ironSus: byId("ironSus"),
+      ironSusVal: byId("ironSusVal"),
+      ironDamping: byId("ironDamping"),
+      ironDampingVal: byId("ironDampingVal"),
+
+      temperature: byId("temperature"),
+      temperatureVal: byId("temperatureVal"),
+      curieTemp: byId("curieTemp"),
+      curieTempVal: byId("curieTempVal"),
+
+      probeX: byId("probeX"),
+      probeY: byId("probeY"),
+      probeB: byId("probeB"),
+      probeDir: byId("probeDir"),
+      tasksBox: byId("tasksBox"),
+      scoreNow: byId("scoreNow"),
+      scorePct: byId("scorePct"),
+      timerDisplay: byId("timerDisplay"),
+      timerState: byId("timerState"),
+      timerMinutes: byId("timerMinutes"),
+      teacherNotes: byId("teacherNotes")
+    };
+
+    const state = {
+      width: mainCanvas.width,
+      height: mainCanvas.height,
+      magnets: [
+        { x: 370, y: 300, length: 180, thickness: 42, angle: 0, strength: 1, polarity: 1, label: "A" },
+        { x: 830, y: 300, length: 180, thickness: 42, angle: 0, strength: 1, polarity: -1, label: "B" }
+      ],
+      iron: {
+        enabled: true,
+        x: 650,
+        y: 470,
+        width: 120,
+        height: 48,
+        susceptibility: 1.2,
+        vx: 0,
+        vy: 0,
+        damping: 0.93
+      },
+      shield: {
+        active: false,
+        x: 700,
+        y: 300,
+        width: 60,
+        height: 180
+      },
+      drag: { target: null, type: null, offsetX: 0, offsetY: 0 },
+      probe: { active: true, x: 580, y: 180 },
+      graphLine: { a: {x: 250, y: 120}, b: {x: 950, y: 120} },
+      tasks: [],
+      score: { points: 0, total: 0 },
+      timer: { duration: 600, remaining: 600, running: false, lastTime: 0 },
+      temperature: 20,
+      curieTemp: 770
+    };
+
+    function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+    function dist(ax, ay, bx, by){ return Math.hypot(ax-bx, ay-by); }
+    function rotatePoint(px, py, angle){
+      const c=Math.cos(angle), s=Math.sin(angle);
+      return {x:px*c-py*s, y:px*s+py*c};
+    }
+    function setVal(el, val){ el.textContent = val; }
+
+    function syncUI(){
+      updateStudentModeUI();
+      updatePracticalGuide();
+      setVal(ui.magStrengthAVal, Number(ui.magStrengthA.value).toFixed(2));
+      setVal(ui.magAngleAVal, ui.magAngleA.value + "°");
+      setVal(ui.magLengthAVal, ui.magLengthA.value);
+      setVal(ui.magThicknessAVal, ui.magThicknessA.value);
+      setVal(ui.magStrengthBVal, Number(ui.magStrengthB.value).toFixed(2));
+      setVal(ui.magAngleBVal, ui.magAngleB.value + "°");
+      setVal(ui.magLengthBVal, ui.magLengthB.value);
+      setVal(ui.magThicknessBVal, ui.magThicknessB.value);
+      setVal(ui.ironWidthVal, ui.ironWidth.value);
+      setVal(ui.ironHeightVal, ui.ironHeight.value);
+      setVal(ui.ironSusVal, Number(ui.ironSus.value).toFixed(2));
+      setVal(ui.ironDampingVal, Number(ui.ironDamping.value).toFixed(2));
+      setVal(ui.temperatureVal, ui.temperature.value + " °C");
+      setVal(ui.curieTempVal, ui.curieTemp.value + " °C");
+    }
+
+    function applyUI(){
+      updateStudentModeUI();
+      state.magnets[0].strength = Number(ui.magStrengthA.value);
+      state.magnets[0].angle = Number(ui.magAngleA.value) * Math.PI / 180;
+      state.magnets[0].length = Number(ui.magLengthA.value);
+      state.magnets[0].thickness = Number(ui.magThicknessA.value);
+      state.magnets[1].strength = Number(ui.magStrengthB.value);
+      state.magnets[1].angle = Number(ui.magAngleB.value) * Math.PI / 180;
+      state.magnets[1].length = Number(ui.magLengthB.value);
+      state.magnets[1].thickness = Number(ui.magThicknessB.value);
+      state.iron.enabled = ui.ironEnabled.checked;
+      state.iron.width = Number(ui.ironWidth.value);
+      state.iron.height = Number(ui.ironHeight.value);
+      state.iron.susceptibility = Number(ui.ironSus.value);
+      state.iron.damping = Number(ui.ironDamping.value);
+      state.temperature = Number(ui.temperature.value);
+      state.curieTemp = Number(ui.curieTemp.value);
+      syncUI();
+    }
+
+    [
+      "showHeat","showFieldLines","showVectors","showCompass","showIronFilings","showDomains",
+      "showNeutral","showForce","animateIron","twoMagnets","ironEnabled","testMode","teacherMode","studentMode",
+      "magStrengthA","magAngleA","magLengthA","magThicknessA",
+      "magStrengthB","magAngleB","magLengthB","magThicknessB",
+      "ironWidth","ironHeight","ironSus","ironDamping","temperature","curieTemp"
+    ].forEach(id=>{
+      byId(id).addEventListener("input", applyUI);
+      byId(id).addEventListener("change", applyUI);
+    });
+
+    byId("flipA").onclick = ()=> state.magnets[0].polarity *= -1;
+    byId("flipB").onclick = ()=> state.magnets[1].polarity *= -1;
+    byId("centerA").onclick = ()=> { state.magnets[0].x = 360; state.magnets[0].y = 300; };
+    byId("centerB").onclick = ()=> { state.magnets[1].x = 840; state.magnets[1].y = 300; };
+    byId("resetIron").onclick = ()=> resetIron();
+    byId("moveIron").onclick = ()=> { state.iron.x = 650; state.iron.y = 470; state.iron.vx = 0; state.iron.vy = 0; };
+    byId("newTaskSet").onclick = ()=> generateTasks();
+    byId("checkAnswers").onclick = ()=> checkTasks();
+    byId("showSolutions").onclick = ()=> showHints();
+    byId("sceneSingleBtn").onclick = ()=> setScene("single");
+    byId("sceneNNBtn").onclick = ()=> setScene("NN");
+    byId("sceneNSBtn").onclick = ()=> setScene("NS");
+    byId("sceneShieldBtn").onclick = ()=> setScene("shield");
+    byId("sceneCurieBtn").onclick = ()=> setScene("curie");
+    byId("startTimerBtn").onclick = ()=> startTimer();
+    byId("pauseTimerBtn").onclick = ()=> pauseTimer();
+    byId("resetTimerBtn").onclick = ()=> resetTimer();
+    byId("exportWorksheetBtn").onclick = ()=> exportWorksheet();
+    byId("practicalGuideSelect").onchange = ()=> updatePracticalGuide();
+    byId("saveNotesBtn").onclick = ()=> saveNotes();
+    byId("loadNotesBtn").onclick = ()=> loadNotes();
+
+    function resetIron(){
+      state.iron.x = 650; state.iron.y = 470; state.iron.vx = 0; state.iron.vy = 0;
+    }
+
+    function setScene(type){
+      state.shield.active = false;
+      if(type === "single"){
+        ui.twoMagnets.checked = false;
+        state.magnets[0].x = 420; state.magnets[0].y = 310; state.magnets[0].angle = 0; state.magnets[0].polarity = 1;
+        state.magnets[1].x = 880; state.magnets[1].y = 310; state.magnets[1].angle = 0; state.magnets[1].polarity = -1;
+        ui.temperature.value = 20;
+        resetIron();
+      }
+      if(type === "NN"){
+        ui.twoMagnets.checked = true;
+        state.magnets[0].x = 420; state.magnets[0].y = 300; state.magnets[0].angle = 0; state.magnets[0].polarity = 1;
+        state.magnets[1].x = 760; state.magnets[1].y = 300; state.magnets[1].angle = Math.PI; state.magnets[1].polarity = 1;
+        ui.temperature.value = 20;
+        resetIron(); state.iron.x = 590; state.iron.y = 500;
+      }
+      if(type === "NS"){
+        ui.twoMagnets.checked = true;
+        state.magnets[0].x = 420; state.magnets[0].y = 300; state.magnets[0].angle = 0; state.magnets[0].polarity = 1;
+        state.magnets[1].x = 760; state.magnets[1].y = 300; state.magnets[1].angle = 0; state.magnets[1].polarity = -1;
+        ui.temperature.value = 20;
+        resetIron(); state.iron.x = 590; state.iron.y = 500;
+      }
+      if(type === "shield"){
+        ui.twoMagnets.checked = false;
+        state.magnets[0].x = 370; state.magnets[0].y = 310; state.magnets[0].angle = 0; state.magnets[0].polarity = 1;
+        state.shield.active = true; state.shield.x = 630; state.shield.y = 300; state.shield.width = 70; state.shield.height = 210;
+        ui.temperature.value = 20;
+        resetIron(); state.iron.x = 840; state.iron.y = 310;
+      }
+      if(type === "curie"){
+        ui.twoMagnets.checked = false;
+        state.magnets[0].x = 420; state.magnets[0].y = 310; state.magnets[0].angle = 0; state.magnets[0].polarity = 1;
+        resetIron(); state.iron.x = 760; state.iron.y = 320;
+        ui.temperature.value = ui.curieTemp.value;
+      }
+      applyUI();
+    }
+
+    function polesOf(m){
+      const half = m.length/2;
+      const northLocal = {x: half*m.polarity, y:0};
+      const southLocal = {x:-half*m.polarity, y:0};
+      const n = rotatePoint(northLocal.x, northLocal.y, m.angle);
+      const s = rotatePoint(southLocal.x, southLocal.y, m.angle);
+      return {
+        north:{x:m.x+n.x, y:m.y+n.y, q:1},
+        south:{x:m.x+s.x, y:m.y+s.y, q:-1}
+      };
+    }
+
+    function thermalFactor(){
+      const t = state.temperature;
+      const c = state.curieTemp;
+      if(t <= 0.8*c) return 1;
+      if(t >= c) return 0.08;
+      const ratio = (t - 0.8*c) / (0.2*c);
+      return 1 - 0.92*ratio;
+    }
+
+    function fieldAt(x, y){
+      let total = {x:0, y:0};
+      const activeCount = ui.twoMagnets.checked ? 2 : 1;
+      const tempScale = thermalFactor();
+      for(let mi=0; mi<activeCount; mi++){
+        const m = state.magnets[mi];
+        const poles = polesOf(m);
+        const k = 14000 * m.strength;
+        for(const pole of [poles.north, poles.south]){
+          let dx = x - pole.x;
+          let dy = y - pole.y;
+          let r2 = dx*dx + dy*dy;
+          if(r2 < 90) r2 = 90;
+          const r = Math.sqrt(r2);
+          const factor = (k * pole.q / (r2 * r)) * tempScale;
+          total.x += factor * dx;
+          total.y += factor * dy;
+        }
+      }
+
+      if(state.shield.active){
+        const sx = state.shield.x, sy = state.shield.y, sw = state.shield.width, sh = state.shield.height;
+        if(x > sx-sw/2 && x < sx+sw/2 && y > sy-sh/2 && y < sy+sh/2){
+          total.x *= 0.35; total.y *= 0.35;
+        } else {
+          const dd = Math.abs(x - sx);
+          if(dd < 130 && Math.abs(y-sy) < sh/2 + 30){
+            const t = clamp((130 - dd)/130, 0, 1);
+            total.x *= 1 - 0.35*t; total.y *= 1 - 0.35*t;
+          }
+        }
+      }
+      return total;
+    }
+
+    function fieldMagnitude(x,y){
+      const b = fieldAt(x,y);
+      return Math.sqrt(b.x*b.x + b.y*b.y);
+    }
+
+    function drawArrow(x,y,vx,vy,scale=1,color="#111",width=1.5){
+      const len = Math.hypot(vx,vy);
+      if(len < 1e-6) return;
+      const ux = vx/len, uy = vy/len;
+      const L = 14*scale;
+      const ex = x + ux*L, ey = y + uy*L;
+      ctx.strokeStyle = color; ctx.lineWidth = width;
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(ex,ey); ctx.stroke();
+      const ah = 5*scale;
+      ctx.beginPath();
+      ctx.moveTo(ex,ey);
+      ctx.lineTo(ex - ux*ah - uy*ah*0.7, ey - uy*ah + ux*ah*0.7);
+      ctx.lineTo(ex - ux*ah + uy*ah*0.7, ey - uy*ah - ux*ah*0.7);
+      ctx.closePath();
+      ctx.fillStyle = color; ctx.fill();
+    }
+
+    function roundedRect(c,x,y,w,h,r,fill,stroke){
+      const rr = Math.min(r, w/2, h/2);
+      c.beginPath();
+      c.moveTo(x+rr,y);
+      c.arcTo(x+w,y,x+w,y+h,rr);
+      c.arcTo(x+w,y+h,x,y+h,rr);
+      c.arcTo(x,y+h,x,y,rr);
+      c.arcTo(x,y,x+w,y,rr);
+      c.closePath();
+      if(fill){ c.fillStyle = fill; c.fill(); }
+      if(stroke){ c.strokeStyle = stroke; c.stroke(); }
+    }
+
+    function drawGrid(){
+      ctx.strokeStyle = "rgba(148,163,184,.16)";
+      ctx.lineWidth = 1;
+      const gap = 40;
+      for(let x=0;x<=state.width;x+=gap){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,state.height); ctx.stroke(); }
+      for(let y=0;y<=state.height;y+=gap){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(state.width,y); ctx.stroke(); }
+    }
+
+    function drawHeatMap(){
+      if(!ui.showHeat.checked || ui.testMode.checked) return;
+      const step = 22;
+      for(let y=0;y<state.height;y+=step){
+        for(let x=0;x<state.width;x+=step){
+          const b = fieldMagnitude(x,y);
+          const t = clamp(b/1.6, 0, 1);
+          const alpha = 0.07 + 0.19*t;
+          const hue = 210 - 190*t;
+          ctx.fillStyle = `hsla(${hue},90%,55%,${alpha})`;
+          ctx.fillRect(x,y,step,step);
+        }
+      }
+    }
+
+    function drawVectors(){
+      if(!ui.showVectors.checked || ui.testMode.checked) return;
+      const step = 55;
+      for(let y=30;y<state.height-30;y+=step){
+        for(let x=30;x<state.width-30;x+=step){
+          const b = fieldAt(x,y);
+          const mag = Math.hypot(b.x,b.y);
+          if(mag < 0.015) continue;
+          const scale = clamp(0.6 + mag*0.35, 0.5, 1.2);
+          drawArrow(x,y,b.x,b.y,scale,"rgba(25,25,25,.65)",1.2);
+        }
+      }
+    }
+
+    function traceFieldLine(seedX, seedY, dir=1, steps=260, stepSize=7){
+      let x = seedX, y = seedY;
+      ctx.beginPath(); ctx.moveTo(x,y);
+      for(let i=0;i<steps;i++){
+        const b = fieldAt(x,y);
+        const mag = Math.hypot(b.x,b.y);
+        if(mag < 1e-5) break;
+        const ux = (b.x/mag)*dir, uy = (b.y/mag)*dir;
+        x += ux*stepSize; y += uy*stepSize;
+        if(x < -50 || x > state.width+50 || y < -50 || y > state.height+50) break;
+        ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+
+    function drawFieldLines(){
+      if(!ui.showFieldLines.checked || ui.testMode.checked) return;
+      const countMagnets = ui.twoMagnets.checked ? 2 : 1;
+      for(let mi=0; mi<countMagnets; mi++){
+        const poles = polesOf(state.magnets[mi]);
+        const counts = 16;
+        const radius = 16;
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = mi===0 ? "rgba(17,24,39,.52)" : "rgba(124,58,237,.42)";
+        for(let i=0;i<counts;i++){
+          const a = (Math.PI*2*i)/counts;
+          traceFieldLine(poles.north.x + Math.cos(a)*radius, poles.north.y + Math.sin(a)*radius, +1, 240, 7);
+        }
+        ctx.strokeStyle = mi===0 ? "rgba(17,24,39,.20)" : "rgba(124,58,237,.20)";
+        for(let i=0;i<counts;i++){
+          const a = (Math.PI*2*i)/counts;
+          traceFieldLine(poles.south.x + Math.cos(a)*radius, poles.south.y + Math.sin(a)*radius, -1, 240, 7);
+        }
+      }
+    }
+
+    function drawIronFilings(){
+      if(!ui.showIronFilings.checked || ui.testMode.checked) return;
+      const step = 16;
+      for(let y=24; y<state.height-24; y+=step){
+        for(let x=24; x<state.width-24; x+=step){
+          const b = fieldAt(x,y);
+          const mag = Math.hypot(b.x,b.y);
+          if(mag < 0.03) continue;
+          const ang = Math.atan2(b.y, b.x);
+          const len = clamp(2 + mag*10, 2, 8);
+          ctx.save();
+          ctx.translate(x,y); ctx.rotate(ang);
+          ctx.strokeStyle = `rgba(60,60,60,${clamp(0.18 + mag*0.25, 0.18, 0.68)})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(-len,0); ctx.lineTo(len,0); ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+
+    function drawMagnet(m){
+      ctx.save();
+      ctx.translate(m.x,m.y); ctx.rotate(m.angle);
+      const w = m.length, h = m.thickness;
+      const leftIsNorth = m.polarity < 0;
+      const rightIsNorth = m.polarity > 0;
+      roundedRect(ctx, -w/2, -h/2, w, h, 18, "#f8fafc", "#94a3b8");
+      ctx.beginPath(); ctx.rect(-w/2, -h/2, w/2, h); ctx.fillStyle = leftIsNorth ? "#60a5fa" : "#f87171"; ctx.fill();
+      ctx.beginPath(); ctx.rect(0, -h/2, w/2, h); ctx.fillStyle = rightIsNorth ? "#60a5fa" : "#f87171"; ctx.fill();
+      ctx.strokeStyle = "#475569"; ctx.lineWidth = 2; ctx.strokeRect(-w/2, -h/2, w, h);
+      ctx.beginPath(); ctx.moveTo(0,-h/2); ctx.lineTo(0,h/2); ctx.stroke();
+      ctx.fillStyle = "#fff"; ctx.font = "bold 24px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(leftIsNorth ? "N" : "S", -w/4, 0);
+      ctx.fillText(rightIsNorth ? "N" : "S", w/4, 0);
+      ctx.fillStyle = "#111827"; ctx.font = "bold 15px Arial"; ctx.fillText(m.label, 0, -h/2 - 16);
+      ctx.restore();
+      const poles = polesOf(m);
+      ctx.fillStyle = "#1d4ed8"; ctx.beginPath(); ctx.arc(poles.north.x,poles.north.y,7,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = "#dc2626"; ctx.beginPath(); ctx.arc(poles.south.x,poles.south.y,7,0,Math.PI*2); ctx.fill();
+      if(!ui.testMode.checked){
+        ctx.fillStyle = "#1d4ed8"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center"; ctx.fillText("N poolus", poles.north.x, poles.north.y - 15);
+        ctx.fillStyle = "#dc2626"; ctx.fillText("S poolus", poles.south.x, poles.south.y - 15);
+      }
+    }
+
+    function drawShield(){
+      if(!state.shield.active) return;
+      roundedRect(ctx, state.shield.x-state.shield.width/2, state.shield.y-state.shield.height/2, state.shield.width, state.shield.height, 10, "rgba(100,116,139,.55)", "#475569");
+      if(!ui.testMode.checked){
+        ctx.fillStyle = "#334155"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center";
+        ctx.fillText("Rauaplaat", state.shield.x, state.shield.y - state.shield.height/2 - 10);
+      }
+    }
+
+    function getIronPolarityInfo(){
+      const iron = state.iron;
+      const b = fieldAt(iron.x, iron.y);
+      const mag = Math.hypot(b.x,b.y);
+      if(mag < 1e-5) return null;
+      const ux = b.x/mag, uy = b.y/mag;
+      const left = {x: iron.x - iron.width/2, y: iron.y};
+      const right = {x: iron.x + iron.width/2, y: iron.y};
+      const leftProj = left.x*ux + left.y*uy;
+      const rightProj = right.x*ux + right.y*uy;
+      return leftProj < rightProj ? {nearSide:"left", farSide:"right", fieldDir:{x:ux,y:uy}} : {nearSide:"right", farSide:"left", fieldDir:{x:ux,y:uy}};
+    }
+
+    function drawIron(){
+      if(!state.iron.enabled) return;
+      const iron = state.iron;
+      const x = iron.x - iron.width/2, y = iron.y - iron.height/2;
+      roundedRect(ctx, x, y, iron.width, iron.height, 10, "#94a3b8", "#475569");
+      const pol = getIronPolarityInfo();
+      if(pol && !ui.testMode.checked){
+        const nearX = pol.nearSide==="left" ? x+12 : x+iron.width-12;
+        const farX = pol.farSide==="left" ? x+12 : x+iron.width-12;
+        const bCenter = fieldAt(iron.x, iron.y);
+        const pA = polesOf(state.magnets[0]).north;
+        const centerToNorth = {x:pA.x-iron.x, y:pA.y-iron.y};
+        const dot = bCenter.x*centerToNorth.x + bCenter.y*centerToNorth.y;
+        const nearLabel = dot > 0 ? "S" : "N";
+        const farLabel = nearLabel === "N" ? "S" : "N";
+        ctx.fillStyle = "#ffffffcc"; ctx.font = "bold 18px Arial"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(nearLabel, nearX, iron.y); ctx.fillText(farLabel, farX, iron.y);
+      }
+      if(ui.showDomains.checked) drawDomains();
+      if(!ui.testMode.checked){ ctx.fillStyle = "#334155"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center"; ctx.fillText("Rauast ese", iron.x, iron.y + iron.height/2 + 22); }
+    }
+
+    function drawDomains(){
+      const iron = state.iron;
+      const cols = Math.max(4, Math.floor(iron.width/22));
+      const rows = Math.max(2, Math.floor(iron.height/18));
+      const startX = iron.x - iron.width/2 + 10;
+      const startY = iron.y - iron.height/2 + 10;
+      const stepX = (iron.width - 20)/(cols - 1 || 1);
+      const stepY = (iron.height - 20)/(rows - 1 || 1);
+      const tempAlignScale = thermalFactor();
+      for(let j=0;j<rows;j++){
+        for(let i=0;i<cols;i++){
+          const px = startX + i*stepX;
+          const py = startY + j*stepY;
+          const b = fieldAt(px, py);
+          const mag = Math.hypot(b.x,b.y);
+          const align = clamp(mag*1.7*state.iron.susceptibility*tempAlignScale, 0, 1);
+          const randAngle = ((Math.sin(i*13.12 + j*8.33 + state.temperature*0.01)*43758.5453) % (Math.PI*2));
+          const bx = mag > 1e-6 ? b.x/mag : Math.cos(randAngle);
+          const by = mag > 1e-6 ? b.y/mag : Math.sin(randAngle);
+          const rx = Math.cos(randAngle), ry = Math.sin(randAngle);
+          const vx = rx*(1-align) + bx*align;
+          const vy = ry*(1-align) + by*align;
+          drawArrow(px-6, py, vx, vy, 0.7, `rgba(21,128,61,${0.22 + 0.72*align})`, 1.5);
+        }
+      }
+    }
+
+    function computeIronForce(){
+      if(!state.iron.enabled) return {x:0, y:0};
+      const iron = state.iron;
+      const eps = 12;
+      const bx1 = fieldMagnitude(iron.x+eps, iron.y);
+      const bx0 = fieldMagnitude(iron.x-eps, iron.y);
+      const by1 = fieldMagnitude(iron.x, iron.y+eps);
+      const by0 = fieldMagnitude(iron.x, iron.y-eps);
+      const gradX = (bx1 - bx0)/(2*eps);
+      const gradY = (by1 - by0)/(2*eps);
+      const areaFactor = (iron.width * iron.height) / 5000;
+      const tempScale = thermalFactor();
+      const k = 0.75 * iron.susceptibility * areaFactor * tempScale;
+      return { x: gradX*k, y: gradY*k };
+    }
+
+    function drawForce(){
+      if(!state.iron.enabled || !ui.showForce.checked || ui.testMode.checked) return;
+      const f = computeIronForce();
+      const mag = Math.hypot(f.x,f.y);
+      if(mag < 0.001) return;
+      drawArrow(state.iron.x, state.iron.y - state.iron.height/2 - 14, f.x, f.y, clamp(0.8 + mag*40, 0.8, 3), "#d97706", 2);
+      ctx.fillStyle = "#b45309"; ctx.font = "bold 14px Arial"; ctx.textAlign = "center"; ctx.fillText("Jõud", state.iron.x, state.iron.y - state.iron.height/2 - 28);
+    }
+
+    function drawNeutralAreas(){
+      if(!ui.showNeutral.checked || ui.testMode.checked) return;
+      const step = 28; const pts = [];
+      for(let y=40;y<state.height-40;y+=step){
+        for(let x=40;x<state.width-40;x+=step){
+          const b = fieldMagnitude(x,y);
+          if(b < 0.06) pts.push({x,y,b});
+        }
+      }
+      for(const p of pts){ ctx.beginPath(); ctx.arc(p.x,p.y,4,0,Math.PI*2); ctx.fillStyle = "rgba(245,158,11,.55)"; ctx.fill(); }
+      if(pts.length){
+        let minP = pts[0];
+        for(const p of pts) if(p.b < minP.b) minP = p;
+        ctx.fillStyle = "#b45309"; ctx.font = "bold 14px Arial"; ctx.textAlign = "left"; ctx.fillText("Neutraalne / väga nõrk väli", minP.x + 10, minP.y - 8);
+      }
+    }
+
+    function drawProbe(){
+      if(!state.probe.active) return;
+      const x = state.probe.x, y = state.probe.y;
+      const b = fieldAt(x,y);
+      const mag = Math.hypot(b.x,b.y);
+      const deg = Math.atan2(b.y,b.x) * 180 / Math.PI;
+      ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fillStyle = "#111827"; ctx.fill();
+      ctx.beginPath(); ctx.arc(x,y,16,0,Math.PI*2); ctx.strokeStyle = "rgba(17,24,39,.35)"; ctx.stroke();
+      if(ui.showCompass.checked){
+        ctx.save(); ctx.translate(x,y); ctx.rotate(Math.atan2(b.y,b.x));
+        ctx.fillStyle = "#7c3aed"; ctx.beginPath(); ctx.moveTo(18,0); ctx.lineTo(0,-5); ctx.lineTo(0,5); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "#d97706"; ctx.beginPath(); ctx.moveTo(-18,0); ctx.lineTo(0,-5); ctx.lineTo(0,5); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+      ui.probeX.textContent = x.toFixed(0);
+      ui.probeY.textContent = y.toFixed(0);
+      ui.probeB.textContent = mag.toFixed(3);
+      ui.probeDir.textContent = deg.toFixed(1) + "°";
+    }
+
+    function drawGraphLineMarkers(){
+      const a = state.graphLine.a, b = state.graphLine.b;
+      ctx.strokeStyle = "rgba(124,58,237,.8)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      ctx.beginPath(); ctx.arc(a.x,a.y,6,0,Math.PI*2); ctx.fillStyle = "#7c3aed"; ctx.fill();
+      ctx.beginPath(); ctx.arc(b.x,b.y,6,0,Math.PI*2); ctx.fillStyle = "#a855f7"; ctx.fill();
+      if(!ui.testMode.checked){ ctx.fillStyle = "#6d28d9"; ctx.font = "bold 13px Arial"; ctx.fillText("A", a.x + 10, a.y - 8); ctx.fillText("B", b.x + 10, b.y - 8); }
+    }
+
+    function updateIron(){
+      if(!state.iron.enabled || !ui.animateIron.checked) return;
+      if(state.drag.type === "iron") return;
+      const f = computeIronForce();
+      state.iron.vx += f.x; state.iron.vy += f.y;
+      state.iron.vx *= state.iron.damping; state.iron.vy *= state.iron.damping;
+      state.iron.x += state.iron.vx; state.iron.y += state.iron.vy;
+      state.iron.x = clamp(state.iron.x, 40 + state.iron.width/2, state.width - 40 - state.iron.width/2);
+      state.iron.y = clamp(state.iron.y, 40 + state.iron.height/2, state.height - 40 - state.iron.height/2);
+    }
+
+    function pointInRotatedMagnet(px, py, m){
+      const dx = px - m.x, dy = py - m.y; const p = rotatePoint(dx, dy, -m.angle);
+      return p.x >= -m.length/2 && p.x <= m.length/2 && p.y >= -m.thickness/2 && p.y <= m.thickness/2;
+    }
+    function pointInIron(px, py){
+      return state.iron.enabled && px >= state.iron.x - state.iron.width/2 && px <= state.iron.x + state.iron.width/2 && py >= state.iron.y - state.iron.height/2 && py <= state.iron.y + state.iron.height/2;
+    }
+    function getCanvasPos(evt, canvas){
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
+      return { x: (evt.clientX - rect.left) * scaleX, y: (evt.clientY - rect.top) * scaleY };
+    }
+
+    mainCanvas.addEventListener("mousedown", e=>{
+      const p = getCanvasPos(e, mainCanvas);
+      if(pointInIron(p.x,p.y)){
+        state.drag.type = "iron"; state.drag.target = state.iron; state.drag.offsetX = p.x - state.iron.x; state.drag.offsetY = p.y - state.iron.y; return;
+      }
+      const count = ui.twoMagnets.checked ? 2 : 1;
+      for(let i=count-1; i>=0; i--){
+        if(pointInRotatedMagnet(p.x,p.y,state.magnets[i])){
+          state.drag.type = "magnet"; state.drag.target = state.magnets[i]; state.drag.offsetX = p.x - state.magnets[i].x; state.drag.offsetY = p.y - state.magnets[i].y; return;
+        }
+      }
+    });
+
+    mainCanvas.addEventListener("mousemove", e=>{
+      const p = getCanvasPos(e, mainCanvas);
+      if(state.drag.type === "iron"){
+        state.iron.x = clamp(p.x - state.drag.offsetX, 40 + state.iron.width/2, state.width - 40 - state.iron.width/2);
+        state.iron.y = clamp(p.y - state.drag.offsetY, 40 + state.iron.height/2, state.height - 40 - state.iron.height/2);
+        state.iron.vx = 0; state.iron.vy = 0;
+      } else if(state.drag.type === "magnet"){
+        state.drag.target.x = clamp(p.x - state.drag.offsetX, 80, state.width - 80);
+        state.drag.target.y = clamp(p.y - state.drag.offsetY, 80, state.height - 80);
+      }
+    });
+
+    window.addEventListener("mouseup", ()=>{ state.drag.type = null; state.drag.target = null; });
+
+    mainCanvas.addEventListener("click", e=>{
+      const p = getCanvasPos(e, mainCanvas);
+      if(e.shiftKey){ state.graphLine.a = p; return; }
+      if(e.altKey){ state.graphLine.b = p; return; }
+      state.probe.active = true; state.probe.x = p.x; state.probe.y = p.y;
+    });
+
+    function drawGraph(){
+      const c = gctx; const w = graphCanvas.width; const h = graphCanvas.height;
+      c.clearRect(0,0,w,h); c.fillStyle = "#fff"; c.fillRect(0,0,w,h);
+      c.strokeStyle = "#d7e2ee"; c.lineWidth = 1;
+      for(let x=50; x<=w-20; x+=100){ c.beginPath(); c.moveTo(x,20); c.lineTo(x,h-30); c.stroke(); }
+      for(let y=20; y<=h-30; y+=40){ c.beginPath(); c.moveTo(50,y); c.lineTo(w-20,y); c.stroke(); }
+      c.strokeStyle = "#64748b"; c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(50, h-30); c.lineTo(w-20, h-30); c.moveTo(50, h-30); c.lineTo(50, 20); c.stroke();
+      const a = state.graphLine.a, b = state.graphLine.b; const n = 180; let samples = []; let maxB = 0;
+      for(let i=0; i<=n; i++){
+        const t = i/n; const x = a.x + (b.x-a.x)*t; const y = a.y + (b.y-a.y)*t; const val = fieldMagnitude(x,y);
+        samples.push(val); if(val > maxB) maxB = val;
+      }
+      maxB = Math.max(maxB, 0.1);
+      c.strokeStyle = "#7c3aed"; c.lineWidth = 2.5; c.beginPath();
+      for(let i=0; i<=n; i++){
+        const gx = 50 + (w-70)*(i/n); const gy = (h-30) - (h-50)*(samples[i]/maxB);
+        if(i===0) c.moveTo(gx,gy); else c.lineTo(gx,gy);
+      }
+      c.stroke();
+      c.fillStyle = "#334155"; c.font = "13px Arial";
+      c.fillText("|B|", 18, 25); c.fillText("kaugus mööda joont", w/2 - 45, h-8); c.fillText("max = " + maxB.toFixed(3), w-130, 20);
+    }
+
+    function drawPairStatus(){
+      if(!ui.twoMagnets.checked || ui.testMode.checked) return;
+      const p1 = polesOf(state.magnets[0]); const p2 = polesOf(state.magnets[1]);
+      const ends = [
+        {name:"A_N", x:p1.north.x, y:p1.north.y, label:"N"},
+        {name:"A_S", x:p1.south.x, y:p1.south.y, label:"S"},
+        {name:"B_N", x:p2.north.x, y:p2.north.y, label:"N"},
+        {name:"B_S", x:p2.south.x, y:p2.south.y, label:"S"},
+      ];
+      let best = null;
+      for(let i=0;i<2;i++){
+        for(let j=2;j<4;j++){
+          const d = dist(ends[i].x, ends[i].y, ends[j].x, ends[j].y);
+          if(!best || d < best.d) best = {a:ends[i], b:ends[j], d};
+        }
+      }
+      const same = best.a.label === best.b.label;
+      ctx.fillStyle = same ? "#b91c1c" : "#166534";
+      ctx.font = "bold 16px Arial"; ctx.textAlign = "center";
+      ctx.fillText(same ? "Lähimad poolused: samanimelised → tõuge" : "Lähimad poolused: erinimelised → tõmme", state.width/2, 34);
+    }
+
+    function render(){
+      ctx.clearRect(0,0,state.width,state.height);
+      drawGrid(); drawHeatMap(); drawIronFilings(); drawFieldLines(); drawVectors(); drawNeutralAreas();
+      drawShield(); drawMagnet(state.magnets[0]); if(ui.twoMagnets.checked) drawMagnet(state.magnets[1]);
+      drawIron(); drawForce(); drawGraphLineMarkers(); drawProbe(); drawPairStatus(); drawCurieStatus();
+    }
+
+    function drawCurieStatus(){
+      if(ui.testMode.checked) return;
+      const tf = thermalFactor();
+      ctx.fillStyle = tf < 0.2 ? "#b91c1c" : tf < 0.6 ? "#b45309" : "#166534";
+      ctx.font = "bold 16px Arial";
+      ctx.textAlign = "left";
+      const text = tf < 0.2 ? "Curie lähedal või üle selle: magnetiseerumine on väga nõrk" : tf < 0.6 ? "Kõrge temperatuur: domeenide korrastus väheneb" : "Temperatuur madal: domeenid saavad hästi joonduda";
+      ctx.fillText(text, 20, state.height - 18);
+    }
+
+    function update(){
+      applyUI();
+      updateIron();
+      updateTimer();
+      drawGraph();
+    }
+
+    function loop(){ update(); render(); requestAnimationFrame(loop); }
+
+    function updateStudentModeUI(){
+      const hideInStudentMode = [
+        "magStrengthA","magAngleA","magLengthA","magThicknessA",
+        "magStrengthB","magAngleB","magLengthB","magThicknessB",
+        "ironWidth","ironHeight","ironSus","ironDamping",
+        "temperature","curieTemp",
+        "flipA","flipB","centerA","centerB","resetIron","moveIron",
+        "sceneShieldBtn","sceneCurieBtn"
+      ];
+
+      const studentGroups = Array.from(document.querySelectorAll(".group"));
+      studentGroups.forEach(group=>{
+        const heading = group.querySelector("h2");
+        if(!heading) return;
+        const title = heading.textContent.trim();
+        if(ui.studentMode.checked && ["Magnet A","Magnet B","Temperatuur ja Curie efekt"].includes(title)) {
+          group.classList.add("hidden");
+        } else {
+          group.classList.remove("hidden");
+        }
+      });
+
+      hideInStudentMode.forEach(id=>{
+        const el = byId(id);
+        if(!el) return;
+        const wrapper = el.closest(".row") || el.parentElement;
+        if(!wrapper) return;
+        if(ui.studentMode.checked) {
+          if(el.tagName === "INPUT" && el.type === "range") {
+            el.classList.add("hidden");
+          }
+        } else {
+          el.classList.remove("hidden");
+        }
+      });
+
+      const buttonsToHide = ["showSolutions"];
+      buttonsToHide.forEach(id=>{
+        const btn = byId(id);
+        if(!btn) return;
+        btn.classList.toggle("hidden", ui.studentMode.checked);
+      });
+    }
+
+    function updatePracticalGuide(){
+      if(!ui.practicalGuideBox || !ui.practicalGuideSelect) return;
+      const guides = {
+        domains: `
+          <strong>Katse: raua domeenide joondumine</strong>
+          <p class="small">1. Vali stseen <em>1 magnet + raud</em>.</p>
+          <p class="small">2. Lülita sisse domeenide vaade.</p>
+          <p class="small">3. Lohista raud magnetist kaugele ja jälgi domeene.</p>
+          <p class="small">4. Too raud aeglaselt magnetile lähemale.</p>
+          <p class="small">5. Kirjelda, kuidas domeenide suund muutub ja kuidas muutub jõud.</p>
+          <p class="small"><strong>Järeldus:</strong> väline magnetväli korrastab domeene.</p>
+        `,
+        poles: `
+          <strong>Katse: poolused ja jõujooned</strong>
+          <p class="small">1. Näita jõujooni ja kompassi.</p>
+          <p class="small">2. Aseta mõõtepunkt magneti N pooluse lähedale.</p>
+          <p class="small">3. Liiguta mõõtepunkt magneti ümber.</p>
+          <p class="small">4. Võrdle välja suunda N ja S pooluse juures.</p>
+          <p class="small">5. Märgi, kus on väli kõige tugevam.</p>
+          <p class="small"><strong>Järeldus:</strong> väljaspool magnetit kulgevad jõujooned N-st S-ni.</p>
+        `,
+        nnns: `
+          <strong>Katse: N–N ja N–S võrdlus</strong>
+          <p class="small">1. Ava stseen <em>2 magnetit N–N</em>.</p>
+          <p class="small">2. Vaata, kuidas väljad keskosas käituvad.</p>
+          <p class="small">3. Seejärel ava stseen <em>2 magnetit N–S</em>.</p>
+          <p class="small">4. Võrdle jõujoonte kuju ja neutraalset ala mõlemas stseenis.</p>
+          <p class="small">5. Sõnasta, millal tekib tõuge ja millal tõmme.</p>
+          <p class="small"><strong>Järeldus:</strong> samanimelised poolused tõukuvad, erinimelised tõmbuvad.</p>
+        `,
+        curie: `
+          <strong>Katse: temperatuuri ja Curie mõju</strong>
+          <p class="small">1. Ava stseen <em>Curie demo</em>.</p>
+          <p class="small">2. Jälgi domeene madalal temperatuuril.</p>
+          <p class="small">3. Suurenda temperatuuri sammhaaval Curie temperatuurini.</p>
+          <p class="small">4. Vaata, kuidas domeenid muutuvad juhuslikumaks.</p>
+          <p class="small">5. Võrdle jõu noolt enne ja pärast.</p>
+          <p class="small"><strong>Järeldus:</strong> kõrge temperatuur lõhub ferromagnetilise korrastuse.</p>
+        `,
+        shield: `
+          <strong>Katse: rauaplaadi mõju väljale</strong>
+          <p class="small">1. Ava stseen <em>Magnet + raudplaat</em>.</p>
+          <p class="small">2. Vaata välja kuju rauaplaadi ees ja taga.</p>
+          <p class="small">3. Liiguta mõõtepunkti plaadi taha.</p>
+          <p class="small">4. Võrdle välja tugevust ilma plaadita ja plaadiga.</p>
+          <p class="small">5. Selgita, miks väli ümber jaguneb.</p>
+          <p class="small"><strong>Järeldus:</strong> ferromagnetiline materjal muudab välja jaotust.</p>
+        `
+      };
+      ui.practicalGuideBox.innerHTML = guides[ui.practicalGuideSelect.value] || guides.domains;
+    }
+
+    function normalize(s){
+      return (s || "").toLowerCase().trim().replace(/[.,!?]/g, "").replace(/\s+/g, " ");
+    }
+
+    function generateTasks(){
+      const taskPool = [
+        {id:"q1", text:"Kui kaks lähestikku olevat poolust on mõlemad N, kas magnetid tõmbuvad või tõukuvad?", answers:["tõukuvad","tõuge"]},
+        {id:"q2", text:"Mis suunas kulgevad jõujooned väljaspool magnetit?", answers:["n s","n->s","n-st s-ni","n-lt s-le","n-st s-sse"]},
+        {id:"q3", text:"Kui magnet läheneb rauale, kas raua domeenid muutuvad rohkem juhuslikuks või rohkem joondunuks?", answers:["joondunuks","rohkem joondunuks","joonduvad"]},
+        {id:"q4", text:"Kas neutraalses alas on välja tugevus suur või väga väike?", answers:["väga väike","väike"]},
+        {id:"q5", text:"Kas rauast ese muutub magneti lähedal indutseeritult magnetiliseks? (jah/ei)", answers:["jah"]},
+        {id:"q6", text:"Mis juhtub domeenide korrastusega Curie temperatuurile lähenedes?", answers:["väheneb","kaob","nõrgeneb","muutub juhuslikumaks"]},
+        {id:"q7", text:"Kas kõrge temperatuur suurendab või vähendab raua tõmmet magneti poole?", answers:["vähendab","nõrgendab"]},
+        {id:"q8", text:"Kas erinimelised poolused tõmbuvad või tõukuvad?", answers:["tõmbuvad","tõmme"]}
+      ];
+      const shuffled = [...taskPool].sort(()=>Math.random()-0.5).slice(0,5);
+      state.tasks = shuffled.map(t=>({...t, value:"", result:null}));
+      renderTasks(); state.score = {points:0, total:state.tasks.length}; updateScore();
+    }
+
+    function renderTasks(){
+      ui.tasksBox.innerHTML = "";
+      state.tasks.forEach((task, idx)=>{
+        const div = document.createElement("div"); div.className = "task";
+        div.innerHTML = `
+          <div><strong>${idx+1}.</strong> ${task.text}</div>
+          <input data-task="${task.id}" type="text" placeholder="Sisesta vastus">
+          <div id="res_${task.id}" class="small" style="margin-top:6px;"></div>
+        `;
+        ui.tasksBox.appendChild(div);
+      });
+      ui.tasksBox.querySelectorAll("input").forEach(inp=>{
+        inp.addEventListener("input", e=>{
+          const task = state.tasks.find(t=>t.id === inp.dataset.task);
+          if(task) task.value = e.target.value;
+        });
+      });
+    }
+
+    function checkTasks(){
+      let points = 0;
+      state.tasks.forEach(task=>{
+        const user = normalize(task.value);
+        const ok = user.length > 0 && task.answers.some(a => {
+          const ans = normalize(a);
+          return user.includes(ans) || ans.includes(user);
+        });
+        task.result = ok ? "ok" : "bad";
+        if(ok) points++;
+        const el = byId("res_" + task.id);
+        if(el){
+          el.className = "small " + (ok ? "ok" : "bad");
+          el.textContent = user.length === 0 ? "Vastus puudub" : (ok ? "Õige" : "Vale või liiga ebatäpne");
+        }
+      });
+      state.score = {points, total: state.tasks.length};
+      updateScore();
+    }
+
+    function showHints(){
+      const hints = {
+        q1:"Vihje: samanimelised poolused ei lähe kokku.",
+        q2:"Vihje: väljaspool magnetit algavad jooned N juurest ja lõpevad S juures.",
+        q3:"Vihje: väli korrastab domeene.",
+        q4:"Vihje: neutraalses alas on väli peaaegu null.",
+        q5:"Vihje: raud magnetiseerub välise välja mõjul.",
+        q6:"Vihje: soojusliikumine lõhub domeenide korrastust.",
+        q7:"Vihje: mida nõrgem domeenide korrastus, seda väiksem tõmme.",
+        q8:"Vihje: erinevad poolused lähevad kokku."
+      };
+      state.tasks.forEach(task=>{
+        const el = byId("res_" + task.id); if(!el) return;
+        el.className = "small mid"; el.textContent = hints[task.id] || "Vihje puudub";
+      });
+    }
+
+    function updateScore(){
+      ui.scoreNow.textContent = `${state.score.points} / ${state.score.total}`;
+      ui.scorePct.textContent = state.score.total ? Math.round(100*state.score.points/state.score.total) + "%" : "0%";
+    }
+
+    function startTimer(){
+      const mins = Math.max(1, Number(ui.timerMinutes.value) || 10);
+      if(!state.timer.running && (state.timer.remaining <= 0 || state.timer.remaining === state.timer.duration)){
+        state.timer.duration = mins * 60;
+        state.timer.remaining = state.timer.duration;
+      }
+      state.timer.running = true;
+      state.timer.lastTime = performance.now();
+      ui.timerState.textContent = "Jookseb";
+    }
+
+    function pauseTimer(){
+      state.timer.running = false;
+      ui.timerState.textContent = "Paus";
+    }
+
+    function resetTimer(){
+      const mins = Math.max(1, Number(ui.timerMinutes.value) || 10);
+      state.timer.duration = mins * 60;
+      state.timer.remaining = state.timer.duration;
+      state.timer.running = false;
+      ui.timerState.textContent = "Seisab";
+      updateTimerDisplay();
+    }
+
+    function updateTimer(){
+      if(state.timer.running){
+        const now = performance.now();
+        const dt = (now - state.timer.lastTime) / 1000;
+        state.timer.lastTime = now;
+        state.timer.remaining = Math.max(0, state.timer.remaining - dt);
+        if(state.timer.remaining <= 0){
+          state.timer.running = false;
+          ui.timerState.textContent = "Aeg läbi";
+        }
+      }
+      updateTimerDisplay();
+    }
+
+    function updateTimerDisplay(){
+      const total = Math.ceil(state.timer.remaining);
+      const mm = String(Math.floor(total / 60)).padStart(2, "0");
+      const ss = String(total % 60).padStart(2, "0");
+      ui.timerDisplay.textContent = `${mm}:${ss}`;
+    }
+
+    function exportWorksheet(){
+      const lines = [];
+      lines.push("MAGNETI TÖÖLEHT");
+      lines.push("");
+      lines.push("Temperatuur: " + state.temperature + " °C");
+      lines.push("Curie temperatuur: " + state.curieTemp + " °C");
+      lines.push("Punktid: " + state.score.points + " / " + state.score.total);
+      lines.push("");
+      state.tasks.forEach((task, i)=>{
+        lines.push((i+1) + ". " + task.text);
+        lines.push("Õpilase vastus: " + (task.value || ""));
+        lines.push("Tulemus: " + (task.result === "ok" ? "Õige" : task.result === "bad" ? "Vale" : "Kontrollimata"));
+        lines.push("");
+      });
+      lines.push("Õpetaja märkmed:");
+      lines.push(ui.teacherNotes.value || "");
+      const blob = new Blob([lines.join("\n")], {type: "text/plain;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "magneti_tooleht.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function saveNotes(){
+      localStorage.setItem("magnetTeacherNotes", ui.teacherNotes.value || "");
+      alert("Märkmed salvestatud.");
+    }
+
+    function loadNotes(){
+      ui.teacherNotes.value = localStorage.getItem("magnetTeacherNotes") || "";
+      alert("Märkmed laaditud.");
+    }
+
+    function initTimer(){
+      const mins = Math.max(1, Number(ui.timerMinutes.value) || 10);
+      state.timer.duration = mins * 60;
+      state.timer.remaining = state.timer.duration;
+      updateTimerDisplay();
+    }
+
+    generateTasks();
+    initTimer();
+    setScene("single");
+    syncUI();
+    applyUI();
+    loop();
+  </script>
+</body>
+</html>

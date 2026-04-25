@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Harmoonilise võnkumise simulatsioon</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-2: #eef3ff;
+      --text: #172033;
+      --muted: #5d6b89;
+      --accent: #d63384;
+      --accent-2: #4f46e5;
+      --good: #0f9d58;
+      --warn: #c2410c;
+      --border: #d9e2f2;
+      --shadow: 0 10px 30px rgba(25, 47, 89, 0.08);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, #eef3fb 100%);
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+      padding: 18px 22px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .title-wrap h1 {
+      margin: 0 0 6px;
+      font-size: clamp(24px, 2vw, 34px);
+    }
+
+    .title-wrap p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .live-values {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(110px, 1fr));
+      gap: 10px;
+      min-width: min(100%, 520px);
+    }
+
+    .mini-card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+
+    .mini-card .label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .mini-card .value {
+      font-size: 21px;
+      font-weight: 700;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.7fr 1fr;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    }
+
+    .card-header h2, .card-header h3 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .card-header p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .simulation-wrap {
+      padding: 16px;
+    }
+
+    .sim-layout {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 16px;
+    }
+
+    canvas {
+      width: 100%;
+      display: block;
+      background: #fcfdff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+    }
+
+    .controls {
+      padding: 14px 16px 18px;
+      border-top: 1px solid var(--border);
+      background: #fbfdff;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .mode-tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 11px 15px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .primary { background: var(--accent-2); color: white; }
+    .secondary { background: #e8eeff; color: var(--accent-2); }
+    .accent { background: #ffe4f0; color: var(--accent); }
+    .tab-btn.active { background: var(--accent-2); color: #fff; }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px 18px;
+    }
+
+    .control {
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: white;
+    }
+
+    .control label {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .control small {
+      color: var(--muted);
+      display: block;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent-2);
+    }
+
+    .formula-box {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .formula {
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      font-size: 19px;
+      font-weight: 700;
+      overflow-x: auto;
+    }
+
+    .formula-note {
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      background: #fbfdff;
+    }
+
+    .info-card {
+      padding: 14px;
+      border-radius: 14px;
+      background: white;
+      border: 1px solid var(--border);
+    }
+
+    .info-card h4 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .info-card p {
+      margin: 0;
+      line-height: 1.5;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .tasks {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .task-meta {
+      display: grid;
+      gap: 6px;
+      margin: 10px 0;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8fbff;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .solution-box {
+      margin-top: 10px;
+      padding: 12px;
+      border-radius: 12px;
+      background: #f8fbff;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text);
+      white-space: pre-line;
+    }
+
+    .solution-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .task-tools {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .task {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .task strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .task p {
+      margin: 0 0 10px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .task .answer-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .task input[type="number"] {
+      width: 130px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 15px;
+    }
+
+    .feedback {
+      font-weight: 700;
+      min-height: 20px;
+    }
+
+    .good { color: var(--good); }
+    .warn { color: var(--warn); }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 0 16px 14px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      display: inline-block;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .pink { background: var(--accent); }
+    .blue { background: var(--accent-2); }
+    .green { background: var(--good); }
+
+    @media (max-width: 1100px) {
+      .main-grid,
+      .sim-layout,
+      .topbar,
+      .control-grid,
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .live-values {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="topbar">
+      <div class="title-wrap">
+        <h1>Harmoonilise võnkumise simulatsioon</h1>
+        <p>
+          Professionaalne õppesimulatsioon 10. klassile. Näitab ühtlase ringliikumise projektsiooni,
+          võnkumise graafikut, olulisemaid füüsikalisi suurusi ning võimaldab lahendada ülesandeid.
+        </p>
+      </div>
+      <div class="live-values">
+        <div class="mini-card"><div class="label">x(t)</div><div class="value" id="xNow">0.00 m</div></div>
+        <div class="mini-card"><div class="label">v(t)</div><div class="value" id="vNow">0.00 m/s</div></div>
+        <div class="mini-card"><div class="label">a(t)</div><div class="value" id="aNow">0.00 m/s²</div></div>
+        <div class="mini-card"><div class="label">φ(t)</div><div class="value" id="phiNow">0.00 rad</div></div>
+        <div class="mini-card"><div class="label">φ(t)</div><div class="value" id="phiNowDeg">0.0°</div></div>
+      </div>
+    </section>
+
+    <section class="main-grid">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>Simulatsioon</h2>
+            <p>Vasakul on ringliikumine ja projektsioon, paremal hälbe graafik x(t).</p>
+          </div>
+        </div>
+
+        <div class="simulation-wrap">
+          <div class="sim-layout">
+            <canvas id="simCanvas" width="760" height="440" aria-label="Ringliikumise ja võnkumise simulatsioon"></canvas>
+            <canvas id="graphCanvas" width="560" height="440" aria-label="Hälbe graafik ajas"></canvas>
+          </div>
+        </div>
+
+        <div class="legend">
+          <span><span class="dot pink"></span>võnkuva keha asukoht ja graafik</span>
+          <span><span class="dot blue"></span>ringliikumine</span>
+          <span><span class="dot green"></span>kiirusvektor / hetkeinfo</span>
+        </div>
+
+        <div class="controls">
+          <div class="mode-tabs">
+            <button class="secondary tab-btn active" id="showTasksBtn">Ülesanded</button>
+            <button class="secondary tab-btn" id="showPracticalBtn">Praktiline töö</button>
+          </div>
+
+          <div class="button-row">
+            <button class="primary" id="playPauseBtn">Paus</button>
+            <button class="secondary" id="resetBtn">Alusta uuesti</button>
+            <button class="accent" id="toggleVelocityBtn">Peida kiirus ja kiirendus</button>
+            <button class="secondary" id="toggleTeacherBtn">Õpetaja režiim: väljas</button>
+          </div>
+
+          <div class="control-grid">
+            <div class="control">
+              <label for="ampRange"><span>Amplituud x₀</span><span id="ampLabel">1.20 m</span></label>
+              <input id="ampRange" type="range" min="0.4" max="2.5" step="0.1" value="1.2" />
+              <small>Maksimaalne hälve tasakaaluasendist.</small>
+            </div>
+
+            <div class="control">
+              <label for="periodRange"><span>Periood T</span><span id="periodLabel">4.00 s</span></label>
+              <input id="periodRange" type="range" min="1.0" max="8.0" step="0.1" value="4.0" />
+              <small>Aeg ühe täisvõnke tegemiseks.</small>
+            </div>
+
+            <div class="control">
+              <label for="phaseRange"><span>Algfaas φ₀</span><span id="phaseLabel">0.00 rad</span></label>
+              <input id="phaseRange" type="range" min="0" max="6.28" step="0.01" value="0" />
+              <small>Algushetke faas. Mõjutab seda, kust graafik alustab.</small>
+            </div>
+
+            <div class="control">
+              <label for="speedScaleRange"><span>Animatsiooni kiirus</span><span id="speedScaleLabel">1.00×</span></label>
+              <input id="speedScaleRange" type="range" min="0.2" max="2.5" step="0.1" value="1.0" />
+              <small>Mõjutab ainult visualiseerimise tempot, mitte füüsikalisi seoseid.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>Valemid ja tähendused</h3>
+            <p>Õpilane peab siduma graafiku, liikumise ja valemi.</p>
+          </div>
+        </div>
+
+        <div class="formula-box">
+          <div class="formula" id="mainFormula">x(t) = 1.20 · sin(1.57t + 0.00)</div>
+          <div class="formula">ω = 2π / T &nbsp;&nbsp; | &nbsp;&nbsp; f = 1 / T &nbsp;&nbsp; | &nbsp;&nbsp; φ = ωt + φ₀</div>
+          <div class="formula">v(t) = ωx₀ cos(ωt + φ₀)</div>
+          <div class="formula">a(t) = -ω²x(t)</div>
+          <div class="formula-note" id="conceptText">
+            Kui keha on äärmises asendis, siis on kiirus 0. Kui keha läbib tasakaaluasendit, siis on kiiruse absoluutväärtus maksimaalne.
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-card"><h4>Amplituud</h4><p id="amplitudeInfo">x₀ = 1.20 m</p></div>
+          <div class="info-card"><h4>Periood</h4><p id="periodInfo">T = 4.00 s</p></div>
+          <div class="info-card"><h4>Sagedus</h4><p id="frequencyInfo">f = 0.25 Hz</p></div>
+          <div class="info-card"><h4>Ringsagedus</h4><p id="omegaInfo">ω = 1.57 rad/s</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px;" id="tasksSection">
+      <div class="card-header">
+        <div>
+          <h3>Harjutusülesanded</h3>
+          <p>Automaatkontrolliga ülesanded erinevate raskusastmetega. Andmed uuenevad automaatselt ning igal ülesandel on lahenduskäik.</p>
+        </div>
+        <button class="primary" id="refreshTasksBtn">Uuenda ülesanded</button>
+      </div>
+      <div class="tasks">
+        <div class="task">
+          <strong>I tase – põhiülesanne 1: leia sagedus</strong>
+          <p>Arvuta sagedus valemiga f = 1 / T.</p>
+          <div class="task-meta" id="metaF"></div>
+          <div class="answer-row">
+            <input type="number" step="0.01" id="answerF" placeholder="Hz" />
+            <button class="secondary" data-check="f">Kontrolli</button>
+            <span class="feedback" id="feedbackF"></span>
+          </div>
+          <div class="task-tools">
+            <button class="accent" type="button" data-solution="f">Näita lahenduskäiku</button>
+          </div>
+          <div class="solution-box" id="solutionF" hidden></div>
+        </div>
+
+        <div class="task">
+          <strong>I tase – põhiülesanne 2: leia ringsagedus</strong>
+          <p>Arvuta ringsagedus valemiga ω = 2π / T.</p>
+          <div class="task-meta" id="metaW"></div>
+          <div class="answer-row">
+            <input type="number" step="0.01" id="answerW" placeholder="rad/s" />
+            <button class="secondary" data-check="w">Kontrolli</button>
+            <span class="feedback" id="feedbackW"></span>
+          </div>
+          <div class="task-tools">
+            <button class="accent" type="button" data-solution="w">Näita lahenduskäiku</button>
+          </div>
+          <div class="solution-box" id="solutionW" hidden></div>
+        </div>
+
+        <div class="task">
+          <strong>I tase – põhiülesanne 3: leia maksimaalne kiirus</strong>
+          <p>Arvuta maksimaalne kiirus valemiga v<sub>max</sub> = ωx₀.</p>
+          <div class="task-meta" id="metaVmax"></div>
+          <div class="answer-row">
+            <input type="number" step="0.01" id="answerVmax" placeholder="m/s" />
+            <button class="secondary" data-check="vmax">Kontrolli</button>
+            <span class="feedback" id="feedbackVmax"></span>
+          </div>
+          <div class="task-tools">
+            <button class="accent" type="button" data-solution="vmax">Näita lahenduskäiku</button>
+          </div>
+          <div class="solution-box" id="solutionVmax" hidden></div>
+        </div>
+
+        <div class="task">
+          <strong>II tase – graafiku lugemine 1: leia amplituud</strong>
+          <p>Loe amplituud graafikult või kasuta antud andmeid.</p>
+          <div class="task-meta" id="metaAmp"></div>
+          <div class="answer-row">
+            <input type="number" step="0.01" id="answerAmp" placeholder="m" />
+            <button class="secondary" data-check="amp">Kontrolli</button>
+            <span class="feedback" id="feedbackAmp"></span>
+          </div>
+          <div class="task-tools">
+            <button class="accent" type="button" data-solution="amp">Näita lahenduskäiku</button>
+          </div>
+          <div class="solution-box" id="solutionAmp" hidden></div>
+        </div>
+
+        <div class="task">
+          <strong>II tase – graafiku lugemine 2: leia hälve kindlal ajahetkel</strong>
+          <p>Arvuta hälve valemiga x = x₀ sin(ωt + φ₀).</p>
+          <div class="task-meta" id="metaXtime"></div>
+          <div class="answer-row">
+            <input type="number" step="0.01" id="answerXtime" placeholder="m" />
+            <button class="secondary" data-check="xtime">Kontrolli</button>
+            <span class="feedback" id="feedbackXtime"></span>
+          </div>
+          <div class="task-tools">
+            <button class="accent" type="button" data-solution="xtime">Näita lahenduskäiku</button>
+          </div>
+          <div class="solution-box" id="solutionXtime" hidden></div>
+        </div>
+
+        <div class="task">
+          <strong>II tase – mõisteülesanne 3: maksimaalne kiirendus</strong>
+          <p>Arvuta maksimaalne kiirendus valemiga a<sub>max</sub> = ω²x₀.</p>
+          <div class="task-meta" id="metaAmax"></div>
+          <div class="answer-row">
+            <input type="number" step="0.01" id="answerAmax" placeholder="m/s²" />
+            <button class="secondary" data-check="amax">Kontrolli</button>
+            <span class="feedback" id="feedbackAmax"></span>
+          </div>
+          <div class="task-tools">
+            <button class="accent" type="button" data-solution="amax">Näita lahenduskäiku</button>
+          </div>
+          <div class="solution-box" id="solutionAmax" hidden></div>
+        </div>
+
+        <div class="task">
+          <strong>III tase – analüüs 1: hetkekiirus</strong>
+          <p>Arvuta hetkekiirus valemiga v = ωx₀ cos(ωt + φ₀).</p>
+          <div class="task-meta" id="metaVtime"></div>
+          <div class="answer-row">
+            <input type="number" step="0.01" id="answerVtime" placeholder="m/s" />
+            <button class="secondary" data-check="vtime">Kontrolli</button>
+            <span class="feedback" id="feedbackVtime"></span>
+          </div>
+          <div class="task-tools">
+            <button class="accent" type="button" data-solution="vtime">Näita lahenduskäiku</button>
+          </div>
+          <div class="solution-box" id="solutionVtime" hidden></div>
+        </div>
+
+        <div class="task">
+          <strong>III tase – analüüs 2: hetkekiirendus</strong>
+          <p>Arvuta hetkekiirendus valemiga a = -ω²x.</p>
+          <div class="task-meta" id="metaAtime"></div>
+          <div class="answer-row">
+            <input type="number" step="0.01" id="answerAtime" placeholder="m/s²" />
+            <button class="secondary" data-check="atime">Kontrolli</button>
+            <span class="feedback" id="feedbackAtime"></span>
+          </div>
+          <div class="task-tools">
+            <button class="accent" type="button" data-solution="atime">Näita lahenduskäiku</button>
+          </div>
+          <div class="solution-box" id="solutionAtime" hidden></div>
+        </div>
+
+        <div class="task">
+          <strong>III tase – arutlusülesanne 3: millal on kiirus maksimaalne?</strong>
+          <p>Vali õige väide.</p>
+          <div class="task-meta" id="metaConcept"></div>
+          <div class="answer-row">
+            <label><input type="radio" name="conceptQ" value="wrong1"> Äärmistes asendites</label>
+            <label><input type="radio" name="conceptQ" value="correct"> Tasakaaluasendis</label>
+            <label><input type="radio" name="conceptQ" value="wrong2"> Suvalisel hetkel</label>
+            <button class="secondary" data-check="concept">Kontrolli</button>
+            <span class="feedback" id="feedbackConcept"></span>
+          </div>
+          <div class="task-tools">
+            <button class="accent" type="button" data-solution="concept">Näita lahenduskäiku</button>
+          </div>
+          <div class="solution-box" id="solutionConcept" hidden></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:16px; display:none;" id="practicalSection">
+      <div class="card-header">
+        <div>
+          <h3>Samm-sammuline praktilise töö juhend</h3>
+          <p>Eesti keeles juhend õpilasele, kuidas simulatsiooniga uurimistööd teha.</p>
+        </div>
+      </div>
+      <div class="tasks">
+        <div class="task">
+          <strong>Praktiline töö: harmoonilise võnkumise uurimine</strong>
+          <p><b>Eesmärk:</b> uurida, kuidas sõltuvad hälve, kiirus, kiirendus, sagedus ja periood harmoonilise võnkumise parameetritest.</p>
+          <p><b>Vahendid:</b> käesolev simulatsioon, vihik või tööleht, kalkulaator.</p>
+        </div>
+
+        <div class="task">
+          <strong>1. samm – tutvu simulatsiooniga</strong>
+          <p>Käivita simulatsioon ja vaata, kuidas vasakul liigub punkt ringjoonel ning kuidas selle projektsioon tekitab võnkumise. Vaata samal ajal paremal olevat graafikut x(t).</p>
+        </div>
+
+        <div class="task">
+          <strong>2. samm – määra algseaded</strong>
+          <p>Sea algväärtused näiteks järgmiseks: amplituud 1,20 m, periood 4,00 s ja algfaas 0 rad. Pane need andmed kirja.</p>
+        </div>
+
+        <div class="task">
+          <strong>3. samm – mõõda amplituud</strong>
+          <p>Peata simulatsioon sobivas hetkes ja jälgi, kui kaugele keha tasakaaluasendist liigub. Võrdle seda liuguriga määratud amplituudiga. Kirjuta järeldus.</p>
+        </div>
+
+        <div class="task">
+          <strong>4. samm – määra periood ja sagedus</strong>
+          <p>Jälgi, kui kaua kulub ühele täisvõnkele. Võrdle seda perioodi väärtusega T. Seejärel arvuta sagedus valemiga f = 1/T.</p>
+        </div>
+
+        <div class="task">
+          <strong>5. samm – uuri graafikut</strong>
+          <p>Vaata, millistes punktides on hälve maksimaalne, millal on hälve null ja kuidas muutub graafik, kui suurendad amplituudi või vähendad perioodi.</p>
+        </div>
+
+        <div class="task">
+          <strong>6. samm – uuri kiirust</strong>
+          <p>Lülita sisse kiiruse ja kiirenduse näitamine. Jälgi, millal on kiirus null ja millal on see maksimaalne. Kirjuta tähelepanek oma sõnadega.</p>
+        </div>
+
+        <div class="task">
+          <strong>7. samm – uuri kiirendust</strong>
+          <p>Jälgi kiirenduse suunda. Pane tähele, et kiirendus on alati suunatud tasakaaluasendi poole. Kontrolli seda nii positiivse kui negatiivse hälbe korral.</p>
+        </div>
+
+        <div class="task">
+          <strong>8. samm – muuda amplituuti</strong>
+          <p>Suurenda amplituuti ja jälgi, kuidas muutuvad graafiku kõrgus, maksimaalne kiirus ja maksimaalne kiirendus. Pane tulemused tabelisse.</p>
+        </div>
+
+        <div class="task">
+          <strong>9. samm – muuda perioodi</strong>
+          <p>Vähenda perioodi. Jälgi, kuidas muutuvad sagedus, ringsagedus, maksimaalne kiirus ja maksimaalne kiirendus. Tee järeldus, mis juhtub kiirema võnkumise korral.</p>
+        </div>
+
+        <div class="task">
+          <strong>10. samm – muuda algfaasi</strong>
+          <p>Muuda algfaasi ja vaata, kuidas graafik nihkub. Selgita, miks amplituud ja periood ei muutu, kuid algushetk muutub.</p>
+        </div>
+
+        <div class="task">
+          <strong>11. samm – lahenda ülesanded</strong>
+          <p>Lahenda simulatsioonis vähemalt kolm I taseme, kaks II taseme ja kaks III taseme ülesannet. Kontrolli vastuseid ja paranda vead.</p>
+        </div>
+
+        <div class="task">
+          <strong>12. samm – lõppjäreldused</strong>
+          <p>Vasta kirjalikult järgmistele küsimustele: mis on harmooniline võnkumine, kuidas on see seotud ringliikumisega, millal on kiirus suurim, millal on kiirendus suurim ja kuidas mõjutavad amplituud ning periood võnkumist.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const simCanvas = document.getElementById('simCanvas');
+    const simCtx = simCanvas.getContext('2d');
+    const graphCanvas = document.getElementById('graphCanvas');
+    const graphCtx = graphCanvas.getContext('2d');
+
+    const ampRange = document.getElementById('ampRange');
+    const periodRange = document.getElementById('periodRange');
+    const phaseRange = document.getElementById('phaseRange');
+    const speedScaleRange = document.getElementById('speedScaleRange');
+
+    const ampLabel = document.getElementById('ampLabel');
+    const periodLabel = document.getElementById('periodLabel');
+    const phaseLabel = document.getElementById('phaseLabel');
+    const speedScaleLabel = document.getElementById('speedScaleLabel');
+
+    const xNow = document.getElementById('xNow');
+    const vNow = document.getElementById('vNow');
+    const aNow = document.getElementById('aNow');
+    const phiNow = document.getElementById('phiNow');
+    const phiNowDeg = document.getElementById('phiNowDeg');
+
+    const mainFormula = document.getElementById('mainFormula');
+    const amplitudeInfo = document.getElementById('amplitudeInfo');
+    const periodInfo = document.getElementById('periodInfo');
+    const frequencyInfo = document.getElementById('frequencyInfo');
+    const omegaInfo = document.getElementById('omegaInfo');
+    const conceptText = document.getElementById('conceptText');
+
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const toggleVelocityBtn = document.getElementById('toggleVelocityBtn');
+    const toggleTeacherBtn = document.getElementById('toggleTeacherBtn');
+    const refreshTasksBtn = document.getElementById('refreshTasksBtn');
+    const showTasksBtn = document.getElementById('showTasksBtn');
+    const showPracticalBtn = document.getElementById('showPracticalBtn');
+    const tasksSection = document.getElementById('tasksSection');
+    const practicalSection = document.getElementById('practicalSection');
+
+    let amplitude = parseFloat(ampRange.value);
+    let period = parseFloat(periodRange.value);
+    let phase0 = parseFloat(phaseRange.value);
+    let timeScale = parseFloat(speedScaleRange.value);
+
+    let time = 0;
+    let running = true;
+    let showVelocity = true;
+    let teacherMode = false;
+    let lastTs = performance.now();
+
+    let taskData = {
+      period: 4,
+      amplitude: 1.2,
+      phase0: 0,
+      sampleTime: 1
+    };
+
+    function omega() { return 2 * Math.PI / period; }
+    function frequency() { return 1 / period; }
+    function phase(t) { return omega() * t + phase0; }
+    function x(t) { return amplitude * Math.sin(phase(t)); }
+    function v(t) { return omega() * amplitude * Math.cos(phase(t)); }
+    function a(t) { return -(omega() ** 2) * x(t); }
+
+    function fmt(num, digits = 2) {
+      return Number(num).toFixed(digits);
+    }
+
+    function normalizedPhaseRad(t) {
+      const twoPi = 2 * Math.PI;
+      return ((phase(t) % twoPi) + twoPi) % twoPi;
+    }
+
+    function drawRoundedBox(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function updateLabels() {
+      ampLabel.textContent = `${fmt(amplitude)} m`;
+      periodLabel.textContent = `${fmt(period)} s`;
+      phaseLabel.textContent = `${fmt(phase0)} rad`;
+      speedScaleLabel.textContent = `${fmt(timeScale)}×`;
+
+      amplitudeInfo.textContent = `x₀ = ${fmt(amplitude)} m`;
+      periodInfo.textContent = `T = ${fmt(period)} s`;
+      frequencyInfo.textContent = `f = ${fmt(frequency())} Hz`;
+      omegaInfo.textContent = `ω = ${fmt(omega())} rad/s`;
+      mainFormula.textContent = `x(t) = ${fmt(amplitude)} · sin(${fmt(omega())}t + ${fmt(phase0)})`;
+    }
+
+    function randomFrom(min, max, step) {
+      const count = Math.round((max - min) / step);
+      const idx = Math.floor(Math.random() * (count + 1));
+      return Number((min + idx * step).toFixed(2));
+    }
+
+    function taskOmega() {
+      return 2 * Math.PI / taskData.period;
+    }
+
+    function taskX(t) {
+      return taskData.amplitude * Math.sin(taskOmega() * t + taskData.phase0);
+    }
+
+    function taskV(t) {
+      return taskOmega() * taskData.amplitude * Math.cos(taskOmega() * t + taskData.phase0);
+    }
+
+    function taskA(t) {
+      return -(taskOmega() ** 2) * taskX(t);
+    }
+
+    function generateTasks() {
+      taskData.period = randomFrom(2, 6, 0.5);
+      taskData.amplitude = randomFrom(0.5, 2.0, 0.1);
+      taskData.phase0 = randomFrom(0, 1.57, 0.52);
+      taskData.sampleTime = Number((taskData.period / 4).toFixed(2));
+
+      document.getElementById('metaF').innerHTML = `Andmed: T = ${fmt(taskData.period)} s<br>Tähised: T – võnkeperiood, f – sagedus.`;
+      document.getElementById('metaW').innerHTML = `Andmed: T = ${fmt(taskData.period)} s<br>Tähised: T – võnkeperiood, ω – ringsagedus.`;
+      document.getElementById('metaVmax').innerHTML = `Andmed: x₀ = ${fmt(taskData.amplitude)} m, T = ${fmt(taskData.period)} s<br>Tähised: x₀ – amplituud, T – periood, ω – ringsagedus, v_max – maksimaalne kiirus.`;
+      document.getElementById('metaAmp').innerHTML = `Andmed: x₀ = ${fmt(taskData.amplitude)} m<br>Tähised: x₀ – amplituud ehk maksimaalne hälve tasakaaluasendist.`;
+      document.getElementById('metaXtime').innerHTML = `Andmed: x₀ = ${fmt(taskData.amplitude)} m, T = ${fmt(taskData.period)} s, φ₀ = ${fmt(taskData.phase0)} rad, t = ${fmt(taskData.sampleTime)} s<br>Tähised: x – hälve, x₀ – amplituud, T – periood, φ₀ – algfaas, t – aeg.`;
+      document.getElementById('metaAmax').innerHTML = `Andmed: x₀ = ${fmt(taskData.amplitude)} m, T = ${fmt(taskData.period)} s<br>Tähised: a_max – maksimaalne kiirendus, x₀ – amplituud, T – periood, ω – ringsagedus.`;
+      document.getElementById('metaVtime').innerHTML = `Andmed: x₀ = ${fmt(taskData.amplitude)} m, T = ${fmt(taskData.period)} s, φ₀ = ${fmt(taskData.phase0)} rad, t = ${fmt(taskData.sampleTime)} s<br>Tähised: v – hetkekiirus, x₀ – amplituud, T – periood, φ₀ – algfaas, t – aeg.`;
+      document.getElementById('metaAtime').innerHTML = `Andmed: x₀ = ${fmt(taskData.amplitude)} m, T = ${fmt(taskData.period)} s, φ₀ = ${fmt(taskData.phase0)} rad, t = ${fmt(taskData.sampleTime)} s<br>Tähised: a – hetkekiirendus, x – hälve, x₀ – amplituud, T – periood, φ₀ – algfaas, t – aeg.`;
+      document.getElementById('metaConcept').innerHTML = `Andmed: harmoonilise võnkumise üldised omadused.<br>Tähised: v – kiirus, x – hälve.`;
+
+      document.getElementById('solutionF').innerHTML = `<div class="solution-title">Lahenduskäik</div>1. Kasutan valemit f = 1 / T.
+2. Asendan andmed: f = 1 / ${fmt(taskData.period)}.
+3. Arvutan: f = ${fmt(1 / taskData.period)} Hz.`;
+      document.getElementById('solutionW').innerHTML = `<div class="solution-title">Lahenduskäik</div>1. Kasutan valemit ω = 2π / T.
+2. Asendan andmed: ω = 2π / ${fmt(taskData.period)}.
+3. Arvutan: ω = ${fmt(taskOmega())} rad/s.`;
+      document.getElementById('solutionVmax').innerHTML = `<div class="solution-title">Lahenduskäik</div>1. Kõigepealt leian ringsageduse: ω = 2π / T = 2π / ${fmt(taskData.period)} = ${fmt(taskOmega())} rad/s.
+2. Kasutan valemit v_max = ωx₀.
+3. Asendan andmed: v_max = ${fmt(taskOmega())} · ${fmt(taskData.amplitude)}.
+4. Arvutan: v_max = ${fmt(taskOmega() * taskData.amplitude)} m/s.`;
+      document.getElementById('solutionAmp').innerHTML = `<div class="solution-title">Lahenduskäik</div>1. Amplituud x₀ on suurim hälve tasakaaluasendist.
+2. Antud ülesandes on amplituud juba andmetes kirjas.
+3. Vastus: x₀ = ${fmt(taskData.amplitude)} m.`;
+      document.getElementById('solutionXtime').innerHTML = `<div class="solution-title">Lahenduskäik</div>1. Leian ringsageduse: ω = 2π / T = 2π / ${fmt(taskData.period)} = ${fmt(taskOmega())} rad/s.
+2. Kasutan valemit x = x₀ sin(ωt + φ₀).
+3. Asendan andmed: x = ${fmt(taskData.amplitude)} · sin(${fmt(taskOmega())} · ${fmt(taskData.sampleTime)} + ${fmt(taskData.phase0)}).
+4. Arvutan: x = ${fmt(taskX(taskData.sampleTime))} m.`;
+      document.getElementById('solutionAmax').innerHTML = `<div class="solution-title">Lahenduskäik</div>1. Leian ringsageduse: ω = 2π / T = ${fmt(taskOmega())} rad/s.
+2. Kasutan valemit a_max = ω²x₀.
+3. Asendan andmed: a_max = (${fmt(taskOmega())})² · ${fmt(taskData.amplitude)}.
+4. Arvutan: a_max = ${fmt((taskOmega() ** 2) * taskData.amplitude)} m/s².`;
+      document.getElementById('solutionVtime').innerHTML = `<div class="solution-title">Lahenduskäik</div>1. Leian ringsageduse: ω = ${fmt(taskOmega())} rad/s.
+2. Kasutan valemit v = ωx₀ cos(ωt + φ₀).
+3. Asendan andmed: v = ${fmt(taskOmega())} · ${fmt(taskData.amplitude)} · cos(${fmt(taskOmega())} · ${fmt(taskData.sampleTime)} + ${fmt(taskData.phase0)}).
+4. Arvutan: v = ${fmt(taskV(taskData.sampleTime))} m/s.`;
+      document.getElementById('solutionAtime').innerHTML = `<div class="solution-title">Lahenduskäik</div>1. Leian kõigepealt hälbe: x = ${fmt(taskX(taskData.sampleTime))} m.
+2. Kasutan valemit a = -ω²x.
+3. Asendan andmed: a = -(${fmt(taskOmega())})² · (${fmt(taskX(taskData.sampleTime))}).
+4. Arvutan: a = ${fmt(taskA(taskData.sampleTime))} m/s².`;
+      document.getElementById('solutionConcept').innerHTML = `<div class="solution-title">Lahenduskäik</div>1. Harmoonilise võnkumise äärmistes asendites on keha hetkeks paigal.
+2. Seega on seal kiirus v = 0.
+3. Tasakaaluasendi läbimisel on keha kiirus suurim.
+4. Õige vastus: tasakaaluasendis.`;
+
+      document.querySelectorAll('.solution-box').forEach(box => box.hidden = true);
+      document.querySelectorAll('.feedback').forEach(el => { el.textContent = ''; el.className = 'feedback'; });
+      document.querySelectorAll('.task input[type="number"]').forEach(input => input.value = '');
+      document.querySelectorAll('input[name="conceptQ"]').forEach(input => input.checked = false);
+    }
+
+    function updateLiveValues() {
+      const xx = x(time);
+      const vv = v(time);
+      const aa = a(time);
+      const ph = normalizedPhaseRad(time);
+
+      xNow.textContent = `${fmt(xx)} m`;
+      vNow.textContent = `${fmt(vv)} m/s`;
+      aNow.textContent = `${fmt(aa)} m/s²`;
+      phiNow.textContent = `${fmt(ph)} rad`;
+      phiNowDeg.textContent = `${fmt(ph * 180 / Math.PI, 1)}°`;
+
+      const eps = 0.06 * amplitude;
+      if (Math.abs(xx) > amplitude - eps) {
+        conceptText.textContent = 'Keha on praegu peaaegu äärmises asendis. Selles piirkonnas on kiirus väga väike ja hetkeks võib olla v = 0.';
+      } else if (Math.abs(xx) < eps) {
+        conceptText.textContent = 'Keha läbib praegu tasakaaluasendit. Selles piirkonnas on kiiruse absoluutväärtus kõige suurem.';
+      } else if (xx > 0) {
+        conceptText.textContent = 'Keha asub tasakaaluasendist positiivsel poolel. Ta liigub kas keskpunkti poole või sealt eemale sõltuvalt kiiruse märgist.';
+      } else {
+        conceptText.textContent = 'Keha asub tasakaaluasendist negatiivsel poolel. Seosta selle hetke asend graafiku ja ringliikumise projektsiooniga.';
+      }
+    }
+
+    function drawArrow(ctx, x1, y1, x2, y2, color, width = 3) {
+      const headLen = 10;
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      ctx.strokeStyle = color;
+      ctx.fillStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2, y2);
+      ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawSim() {
+      const ctx = simCtx;
+      const w = simCanvas.width;
+      const h = simCanvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const cx = 170;
+      const cy = 220;
+      const r = 120;
+      const axisX = 510;
+      const axisTop = 70;
+      const axisBottom = 370;
+      const scaleY = 110 / 2.5;
+
+      const ph = phase(time);
+      const px = cx + r * Math.cos(ph);
+      const py = cy - r * Math.sin(ph);
+      const projY = cy - x(time) * scaleY;
+
+      ctx.fillStyle = '#f8fbff';
+      ctx.fillRect(20, 20, w - 40, h - 40);
+
+      ctx.fillStyle = '#172033';
+      ctx.font = 'bold 20px Inter, Arial';
+      ctx.fillText('Ringliikumine ja projektsioon', 34, 46);
+      ctx.font = '14px Inter, Arial';
+      ctx.fillStyle = '#5d6b89';
+      ctx.fillText('Sinusfunktsioon tekib ühtlase ringliikumise projektsioonina.', 34, 66);
+
+      ctx.strokeStyle = '#4f46e5';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#b9c7e4';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx - r - 20, cy);
+      ctx.lineTo(cx + r + 20, cy);
+      ctx.moveTo(cx, cy - r - 20);
+      ctx.lineTo(cx, cy + r + 20);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#4f46e5';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(px, py);
+      ctx.stroke();
+
+      ctx.fillStyle = '#4f46e5';
+      ctx.beginPath();
+      ctx.arc(px, py, 10, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.setLineDash([7, 7]);
+      ctx.strokeStyle = '#94a3c9';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(axisX, py);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.strokeStyle = '#172033';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(axisX, axisTop);
+      ctx.lineTo(axisX, axisBottom);
+      ctx.stroke();
+
+      ctx.setLineDash([8, 8]);
+      ctx.strokeStyle = '#cbd6ec';
+      ctx.beginPath();
+      ctx.moveTo(axisX - 70, cy);
+      ctx.lineTo(axisX + 160, cy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.strokeStyle = '#cbd6ec';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(axisX - 50, cy - amplitude * scaleY);
+      ctx.lineTo(axisX + 150, cy - amplitude * scaleY);
+      ctx.moveTo(axisX - 50, cy + amplitude * scaleY);
+      ctx.lineTo(axisX + 150, cy + amplitude * scaleY);
+      ctx.stroke();
+
+      ctx.fillStyle = '#5d6b89';
+      ctx.font = '15px Inter, Arial';
+      ctx.fillText('+x₀', axisX + 160, cy - amplitude * scaleY + 5);
+      ctx.fillText('−x₀', axisX + 160, cy + amplitude * scaleY + 5);
+      ctx.fillText('0', axisX + 160, cy + 5);
+
+      ctx.strokeStyle = '#d63384';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(axisX, cy);
+      ctx.lineTo(axisX, projY);
+      ctx.stroke();
+
+      ctx.fillStyle = '#d63384';
+      ctx.beginPath();
+      ctx.arc(axisX, projY, 11, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.setLineDash([4, 5]);
+      ctx.strokeStyle = '#d63384';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(axisX, projY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      if (showVelocity) {
+        const vNorm = v(time) / (omega() * Math.max(amplitude, 0.001));
+        const aNorm = a(time) / (omega() * omega() * Math.max(amplitude, 0.001));
+        drawArrow(ctx, axisX + 30, projY, axisX + 30, projY - vNorm * 70, '#0f9d58', 3);
+        drawArrow(ctx, axisX + 62, projY, axisX + 62, projY - aNorm * 70, '#ef6c00', 3);
+        ctx.fillStyle = '#0f9d58';
+        ctx.font = '13px Inter, Arial';
+        ctx.fillText('v', axisX + 24, projY - vNorm * 70 - 8);
+        ctx.fillStyle = '#ef6c00';
+        ctx.fillText('a', axisX + 56, projY - aNorm * 70 - 8);
+      }
+
+      ctx.strokeStyle = '#7c8cc5';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 34, 0, -ph, ph < 0);
+      ctx.stroke();
+      ctx.fillStyle = '#5d6b89';
+      ctx.fillText('φ', cx + 40, cy - 8);
+
+      if (teacherMode) {
+        ctx.fillStyle = '#172033';
+        ctx.font = 'bold 15px Inter, Arial';
+        ctx.fillText(`x = ${fmt(x(time))} m`, 34, 100);
+        ctx.fillText(`v = ${fmt(v(time))} m/s`, 34, 124);
+        ctx.fillText(`a = ${fmt(a(time))} m/s²`, 34, 148);
+        ctx.fillText(`f = ${fmt(frequency())} Hz`, 34, 172);
+        ctx.fillText(`ω = ${fmt(omega())} rad/s`, 34, 196);
+      }
+    }
+
+    function drawGraph() {
+      const ctx = graphCtx;
+      const w = graphCanvas.width;
+      const h = graphCanvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const margin = { left: 58, right: 20, top: 38, bottom: 78 };
+      const gw = w - margin.left - margin.right;
+      const gh = h - margin.top - margin.bottom;
+      const x0 = margin.left;
+      const y0 = margin.top;
+      const centerY = y0 + gh / 2;
+      const scaleY = (gh * 0.42) / 2.5;
+      const totalTime = Math.max(period * 1.5, 6);
+
+      ctx.fillStyle = '#172033';
+      ctx.font = 'bold 20px Inter, Arial';
+      ctx.fillText('Hälbe graafik x(t)', 24, 28);
+      ctx.font = '14px Inter, Arial';
+      ctx.fillStyle = '#5d6b89';
+      ctx.fillText('Graafikult saab lugeda amplituudi, perioodi ja faasi.', 24, 48);
+
+      ctx.strokeStyle = '#172033';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x0, y0 + gh);
+      ctx.lineTo(x0 + gw, y0 + gh);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#dce5f4';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 6; i++) {
+        const yy = y0 + (gh / 6) * i;
+        ctx.beginPath();
+        ctx.moveTo(x0, yy);
+        ctx.lineTo(x0 + gw, yy);
+        ctx.stroke();
+      }
+      for (let i = 0; i <= 8; i++) {
+        const xx = x0 + (gw / 8) * i;
+        ctx.beginPath();
+        ctx.moveTo(xx, y0);
+        ctx.lineTo(xx, y0 + gh);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = '#5d6b89';
+      ctx.font = '13px Inter, Arial';
+      ctx.fillText('x', 16, y0 + 10);
+      ctx.fillText('t', x0 + gw + 8, y0 + gh + 4);
+      ctx.fillText('+x₀', 20, centerY - amplitude * scaleY + 4);
+      ctx.fillText('0', 28, centerY + 4);
+      ctx.fillText('−x₀', 14, centerY + amplitude * scaleY + 4);
+
+      ctx.setLineDash([7, 5]);
+      ctx.strokeStyle = '#c9d5ee';
+      ctx.beginPath();
+      ctx.moveTo(x0, centerY - amplitude * scaleY);
+      ctx.lineTo(x0 + gw, centerY - amplitude * scaleY);
+      ctx.moveTo(x0, centerY + amplitude * scaleY);
+      ctx.lineTo(x0 + gw, centerY + amplitude * scaleY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.strokeStyle = '#d63384';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      for (let i = 0; i <= 500; i++) {
+        const tt = (i / 500) * totalTime;
+        const xx = x0 + (tt / totalTime) * gw;
+        const yy = centerY - x(tt) * scaleY;
+        if (i === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+      }
+      ctx.stroke();
+
+      const currentT = time % totalTime;
+      const markerX = x0 + (currentT / totalTime) * gw;
+      const markerY = centerY - x(currentT) * scaleY;
+      const ph = normalizedPhaseRad(currentT);
+
+      ctx.strokeStyle = '#0f9d58';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(markerX, y0);
+      ctx.lineTo(markerX, y0 + gh);
+      ctx.stroke();
+
+      ctx.fillStyle = '#0f9d58';
+      ctx.beginPath();
+      ctx.arc(markerX, markerY, 7, 0, Math.PI * 2);
+      ctx.fill();
+
+      const phaseMarks = [
+        { label: '0', frac: 0 },
+        { label: 'π/2', frac: 0.25 },
+        { label: 'π', frac: 0.5 },
+        { label: '3π/2', frac: 0.75 },
+        { label: '2π', frac: 1 }
+      ];
+
+      ctx.strokeStyle = '#7c8cc5';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = '#4f46e5';
+      ctx.font = '13px Inter, Arial';
+      phaseMarks.forEach(mark => {
+        const xx = x0 + ((period * mark.frac) / totalTime) * gw;
+        ctx.beginPath();
+        ctx.moveTo(xx, y0 + gh);
+        ctx.lineTo(xx, y0 + gh + 8);
+        ctx.stroke();
+        ctx.fillText(mark.label, xx - 12, y0 + gh + 22);
+      });
+      ctx.fillStyle = '#5d6b89';
+      ctx.fillText('faasinurk ühe perioodi jooksul', x0 + 8, y0 + gh + 40);
+
+      const boxX = Math.min(markerX + 12, x0 + gw - 138);
+      const boxY = y0 + 12;
+      ctx.fillStyle = 'rgba(255,255,255,0.96)';
+      ctx.strokeStyle = '#b8c7e8';
+      ctx.lineWidth = 1.5;
+      drawRoundedBox(ctx, boxX, boxY, 126, 62, 10);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#172033';
+      ctx.font = 'bold 13px Inter, Arial';
+      ctx.fillText(`t = ${fmt(currentT)} s`, boxX + 10, boxY + 18);
+      ctx.fillText(`φ = ${fmt(ph)} rad`, boxX + 10, boxY + 36);
+      ctx.fillText(`${fmt(ph * 180 / Math.PI, 1)}°`, boxX + 10, boxY + 54);
+
+      const bracketStart = x0;
+      const bracketEnd = x0 + (period / totalTime) * gw;
+      const by = y0 + gh + 56;
+      ctx.strokeStyle = '#172033';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(bracketStart, by);
+      ctx.lineTo(bracketEnd, by);
+      ctx.moveTo(bracketStart, by - 8);
+      ctx.lineTo(bracketStart, by + 8);
+      ctx.moveTo(bracketEnd, by - 8);
+      ctx.lineTo(bracketEnd, by + 8);
+      ctx.stroke();
+      ctx.fillStyle = '#172033';
+      ctx.font = 'italic 16px Georgia, serif';
+      ctx.fillText('T', (bracketStart + bracketEnd) / 2 - 4, by - 10);
+
+      if (teacherMode) {
+        const quarterX = x0 + ((period / 4) / totalTime) * gw;
+        const halfX = x0 + ((period / 2) / totalTime) * gw;
+        const threeQuarterX = x0 + (((3 * period) / 4) / totalTime) * gw;
+        ctx.fillStyle = '#4f46e5';
+        ctx.font = '13px Inter, Arial';
+        ctx.fillText('T/4', quarterX - 10, y0 + gh - 8);
+        ctx.fillText('T/2', halfX - 10, y0 + gh - 8);
+        ctx.fillText('3T/4', threeQuarterX - 14, y0 + gh - 8);
+
+        ctx.fillStyle = '#172033';
+        ctx.font = 'bold 13px Inter, Arial';
+        ctx.fillText('Seos: x = x₀ sinφ', x0 + 10, y0 + 18);
+      }
+    }
+
+    function animate(ts) {
+      const dt = (ts - lastTs) / 1000;
+      lastTs = ts;
+      if (running) {
+        time += dt * timeScale;
+      }
+      updateLiveValues();
+      drawSim();
+      drawGraph();
+      requestAnimationFrame(animate);
+    }
+
+    function updateStateFromControls() {
+      amplitude = parseFloat(ampRange.value);
+      period = parseFloat(periodRange.value);
+      phase0 = parseFloat(phaseRange.value);
+      timeScale = parseFloat(speedScaleRange.value);
+      updateLabels();
+      updateLiveValues();
+      drawSim();
+      drawGraph();
+    }
+
+    function showPanel(which) {
+      const showTasks = which === 'tasks';
+      tasksSection.style.display = showTasks ? 'block' : 'none';
+      practicalSection.style.display = showTasks ? 'none' : 'block';
+      showTasksBtn.classList.toggle('active', showTasks);
+      showPracticalBtn.classList.toggle('active', !showTasks);
+    }
+
+    [ampRange, periodRange, phaseRange, speedScaleRange].forEach(el => {
+      el.addEventListener('input', updateStateFromControls);
+    });
+
+    playPauseBtn.addEventListener('click', () => {
+      running = !running;
+      playPauseBtn.textContent = running ? 'Paus' : 'Jätka';
+    });
+
+    resetBtn.addEventListener('click', () => {
+      time = 0;
+      updateLiveValues();
+      drawSim();
+      drawGraph();
+    });
+
+    toggleVelocityBtn.addEventListener('click', () => {
+      showVelocity = !showVelocity;
+      toggleVelocityBtn.textContent = showVelocity ? 'Peida kiirus ja kiirendus' : 'Näita kiirus ja kiirendus';
+      drawSim();
+    });
+
+    toggleTeacherBtn.addEventListener('click', () => {
+      teacherMode = !teacherMode;
+      toggleTeacherBtn.textContent = teacherMode ? 'Õpetaja režiim: sees' : 'Õpetaja režiim: väljas';
+      drawSim();
+      drawGraph();
+    });
+
+    refreshTasksBtn.addEventListener('click', () => {
+      generateTasks();
+    });
+
+    showTasksBtn.addEventListener('click', () => showPanel('tasks'));
+    showPracticalBtn.addEventListener('click', () => showPanel('practical'));
+
+    function checkAnswer(type) {
+      const tolerance = 0.03;
+      const sampleTime = taskData.sampleTime;
+
+      if (type === 'f') {
+        const value = parseFloat(document.getElementById('answerF').value);
+        const feedback = document.getElementById('feedbackF');
+        if (Number.isNaN(value)) {
+          feedback.textContent = 'Sisesta vastus.';
+          feedback.className = 'feedback warn';
+          return;
+        }
+        const correct = 1 / taskData.period;
+        if (Math.abs(value - correct) <= tolerance) {
+          feedback.textContent = `Õige. f = ${fmt(correct)} Hz.`;
+          feedback.className = 'feedback good';
+        } else {
+          feedback.textContent = `Proovi uuesti. Õige vastus on umbes ${fmt(correct)} Hz.`;
+          feedback.className = 'feedback warn';
+        }
+      }
+
+      if (type === 'w') {
+        const value = parseFloat(document.getElementById('answerW').value);
+        const feedback = document.getElementById('feedbackW');
+        if (Number.isNaN(value)) {
+          feedback.textContent = 'Sisesta vastus.';
+          feedback.className = 'feedback warn';
+          return;
+        }
+        const correct = taskOmega();
+        if (Math.abs(value - correct) <= 0.05) {
+          feedback.textContent = `Õige. ω = ${fmt(correct)} rad/s.`;
+          feedback.className = 'feedback good';
+        } else {
+          feedback.textContent = `Proovi uuesti. Õige vastus on umbes ${fmt(correct)} rad/s.`;
+          feedback.className = 'feedback warn';
+        }
+      }
+
+      if (type === 'vmax') {
+        const value = parseFloat(document.getElementById('answerVmax').value);
+        const feedback = document.getElementById('feedbackVmax');
+        if (Number.isNaN(value)) {
+          feedback.textContent = 'Sisesta vastus.';
+          feedback.className = 'feedback warn';
+          return;
+        }
+        const correct = taskOmega() * taskData.amplitude;
+        if (Math.abs(value - correct) <= 0.05) {
+          feedback.textContent = `Õige. v_max = ${fmt(correct)} m/s.`;
+          feedback.className = 'feedback good';
+        } else {
+          feedback.textContent = `Proovi uuesti. Õige vastus on umbes ${fmt(correct)} m/s.`;
+          feedback.className = 'feedback warn';
+        }
+      }
+
+      if (type === 'amp') {
+        const value = parseFloat(document.getElementById('answerAmp').value);
+        const feedback = document.getElementById('feedbackAmp');
+        if (Number.isNaN(value)) {
+          feedback.textContent = 'Sisesta vastus.';
+          feedback.className = 'feedback warn';
+          return;
+        }
+        const correct = taskData.amplitude;
+        if (Math.abs(value - correct) <= 0.03) {
+          feedback.textContent = `Õige. x₀ = ${fmt(correct)} m.`;
+          feedback.className = 'feedback good';
+        } else {
+          feedback.textContent = `Proovi uuesti. Õige vastus on ${fmt(correct)} m.`;
+          feedback.className = 'feedback warn';
+        }
+      }
+
+      if (type === 'xtime') {
+        const value = parseFloat(document.getElementById('answerXtime').value);
+        const feedback = document.getElementById('feedbackXtime');
+        if (Number.isNaN(value)) {
+          feedback.textContent = 'Sisesta vastus.';
+          feedback.className = 'feedback warn';
+          return;
+        }
+        const correct = taskX(sampleTime);
+        if (Math.abs(value - correct) <= 0.05) {
+          feedback.textContent = `Õige. x = ${fmt(correct)} m.`;
+          feedback.className = 'feedback good';
+        } else {
+          feedback.textContent = `Proovi uuesti. Õige vastus on umbes ${fmt(correct)} m.`;
+          feedback.className = 'feedback warn';
+        }
+      }
+
+      if (type === 'amax') {
+        const value = parseFloat(document.getElementById('answerAmax').value);
+        const feedback = document.getElementById('feedbackAmax');
+        if (Number.isNaN(value)) {
+          feedback.textContent = 'Sisesta vastus.';
+          feedback.className = 'feedback warn';
+          return;
+        }
+        const correct = (taskOmega() ** 2) * taskData.amplitude;
+        if (Math.abs(value - correct) <= 0.08) {
+          feedback.textContent = `Õige. a_max = ${fmt(correct)} m/s².`;
+          feedback.className = 'feedback good';
+        } else {
+          feedback.textContent = `Proovi uuesti. Õige vastus on umbes ${fmt(correct)} m/s².`;
+          feedback.className = 'feedback warn';
+        }
+      }
+
+      if (type === 'vtime') {
+        const value = parseFloat(document.getElementById('answerVtime').value);
+        const feedback = document.getElementById('feedbackVtime');
+        if (Number.isNaN(value)) {
+          feedback.textContent = 'Sisesta vastus.';
+          feedback.className = 'feedback warn';
+          return;
+        }
+        const correct = taskV(sampleTime);
+        if (Math.abs(value - correct) <= 0.05) {
+          feedback.textContent = `Õige. v = ${fmt(correct)} m/s.`;
+          feedback.className = 'feedback good';
+        } else {
+          feedback.textContent = `Proovi uuesti. Õige vastus on umbes ${fmt(correct)} m/s.`;
+          feedback.className = 'feedback warn';
+        }
+      }
+
+      if (type === 'atime') {
+        const value = parseFloat(document.getElementById('answerAtime').value);
+        const feedback = document.getElementById('feedbackAtime');
+        if (Number.isNaN(value)) {
+          feedback.textContent = 'Sisesta vastus.';
+          feedback.className = 'feedback warn';
+          return;
+        }
+        const correct = taskA(sampleTime);
+        if (Math.abs(value - correct) <= 0.08) {
+          feedback.textContent = `Õige. a = ${fmt(correct)} m/s².`;
+          feedback.className = 'feedback good';
+        } else {
+          feedback.textContent = `Proovi uuesti. Õige vastus on umbes ${fmt(correct)} m/s².`;
+          feedback.className = 'feedback warn';
+        }
+      }
+
+      if (type === 'concept') {
+        const feedback = document.getElementById('feedbackConcept');
+        const selected = document.querySelector('input[name="conceptQ"]:checked');
+        if (!selected) {
+          feedback.textContent = 'Vali üks vastus.';
+          feedback.className = 'feedback warn';
+          return;
+        }
+        if (selected.value === 'correct') {
+          feedback.textContent = 'Õige. Kiirus on suurim tasakaaluasendi läbimisel.';
+          feedback.className = 'feedback good';
+        } else {
+          feedback.textContent = 'Vale. Kiirus on maksimaalne tasakaaluasendis, mitte äärmistes punktides.';
+          feedback.className = 'feedback warn';
+        }
+      }
+    }
+
+    document.querySelectorAll('[data-check]').forEach(btn => {
+      btn.addEventListener('click', () => checkAnswer(btn.dataset.check));
+    });
+
+    document.querySelectorAll('[data-solution]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.solution;
+        const map = {
+          f: 'solutionF',
+          w: 'solutionW',
+          vmax: 'solutionVmax',
+          amp: 'solutionAmp',
+          xtime: 'solutionXtime',
+          amax: 'solutionAmax',
+          vtime: 'solutionVtime',
+          atime: 'solutionAtime',
+          concept: 'solutionConcept'
+        };
+        const box = document.getElementById(map[key]);
+        box.hidden = !box.hidden;
+        btn.textContent = box.hidden ? 'Näita lahenduskäiku' : 'Peida lahenduskäik';
+      });
+    });
+
+    updateLabels();
+    generateTasks();
+    updateLiveValues();
+    drawSim();
+    drawGraph();
+    showPanel('tasks');
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

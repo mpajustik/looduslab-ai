@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Päikeseenergia õppe-simulaator v4</title>
+<style>
+:root{
+  --bg:#eef4fa; --card:#fff; --line:#d9e4ef; --text:#183046; --muted:#607487;
+  --blue:#1f78ff; --green:#1ea971; --orange:#ff9f1c; --red:#d83b3b; --purple:#8a5cff;
+  --shadow:0 10px 28px rgba(20,48,78,.10); --radius:18px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,sans-serif;color:var(--text);background:linear-gradient(180deg,#f5f9fd 0,#eaf1f8 100%)}
+.app{display:grid;grid-template-columns:340px 1fr;gap:16px;padding:16px;min-height:100vh}
+.panel,.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.panel{padding:16px;position:sticky;top:16px;align-self:start;max-height:calc(100vh - 32px);overflow:auto}
+h1{margin:0 0 8px;font-size:24px}
+.lead{font-size:14px;line-height:1.45;color:var(--muted);margin-bottom:10px}
+.section{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.section h2{margin:0 0 8px;font-size:15px}
+.control{margin-bottom:10px}
+.control label{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin-bottom:4px}
+.value{color:var(--blue);font-weight:700}
+input[type=range],select{width:100%}
+select,button{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:#fff;color:var(--text);font-size:14px}
+button{cursor:pointer;font-weight:700}
+.primary{background:linear-gradient(135deg,#1f78ff,#63a4ff);color:#fff;border:none}
+.btnrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.main{display:grid;gap:16px;align-content:start}
+.metrics{display:grid;grid-template-columns:repeat(8,minmax(100px,1fr));gap:12px}
+.metric{padding:14px}
+.metric .k{font-size:12px;color:var(--muted);margin-bottom:8px}
+.metric .v{font-size:24px;font-weight:800;line-height:1.04}
+.metric .s{font-size:12px;color:var(--muted);margin-top:6px}
+.grid2{display:grid;grid-template-columns:1.18fr .82fr;gap:16px}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.triple{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
+.bottom{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.financeGrid{display:grid;grid-template-columns:420px 1fr;gap:16px;align-items:start}
+.card{padding:14px}
+.card h3{margin:0 0 10px;font-size:16px}
+.sceneWrap{border:1px solid var(--line);border-radius:16px;overflow:hidden;height:430px;background:linear-gradient(180deg,#dff0ff 0,#edf7ff 50%,#edf5e5 50%,#e6f0dc 100%)}
+svg{display:block;width:100%;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px;font-size:12px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:7px}
+.dot{width:10px;height:10px;border-radius:50%}
+.chartBox{padding:10px;border:1px solid var(--line);border-radius:14px;background:#fbfdff}
+canvas{display:block;width:100%;height:280px}
+#financeChart{height:320px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 6px;border-bottom:1px solid #e8eef5;text-align:right;vertical-align:top}
+th:first-child,td:first-child{text-align:left}
+.wideTable{max-height:420px;overflow:auto}
+.small{font-size:12px;color:var(--muted)}
+.status{margin-top:10px;padding:12px;border-radius:14px;border:1px solid var(--line);font-size:14px;line-height:1.45;background:#fbfdff}
+.good{border-color:#bfead8;background:#effbf5}.warn{border-color:#ffe0b0;background:#fff8ed}.bad{border-color:#f4c2c2;background:#fff3f3}
+.info{font-size:13px;line-height:1.45;color:var(--muted)}
+.scenarioGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.scenarioCard{border:1px solid var(--line);border-radius:14px;padding:12px;background:#fbfdff}
+.scenarioCard h4{margin:0 0 8px;font-size:14px}.scenarioCard .big{font-size:22px;font-weight:800}
+.pill{display:inline-block;padding:3px 8px;border-radius:999px;font-size:12px;font-weight:700;background:#eef4fb;color:#41627d}
+@media (max-width:1250px){.app{grid-template-columns:1fr}.panel{position:static;max-height:none}.metrics{grid-template-columns:repeat(4,1fr)}.grid2,.charts,.triple,.bottom,.financeGrid{grid-template-columns:1fr}}
+@media (max-width:700px){.metrics{grid-template-columns:repeat(2,1fr)}.scenarioGrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel">
+    <h1>Päikeseenergia õppe-simulaator</h1>
+    <div class="lead">Interaktiivne päikeseenergia õppe-simulaator, mis modelleerib Eesti tingimustes päikesepaneelide tootmist, maja tarbimist ja akupaagi käitumist tunnipõhiselt ning kuude lõikes.</div>
+
+    <div class="section">
+      <h2>Eesti kuu ja ilm</h2>
+      <div class="control"><label for="month">Vaadeldav kuu <span class="value" id="monthVal"></span></label><input id="month" type="range" min="1" max="12" value="7"></div>
+      <div class="control"><label for="weatherPreset">Ilmastiku tüüp <span class="value" id="weatherPresetVal"></span></label>
+        <select id="weatherPreset"><option value="cloudy">Pilvine</option><option value="mixed" selected>Vahelduv pilvisus</option><option value="sunny">Päikeseline</option></select></div>
+      <div class="control"><label for="cloudiness">Pilvisus <span class="value" id="cloudinessVal"></span></label><input id="cloudiness" type="range" min="0" max="100" value="35"></div>
+      <div class="control"><label for="temperature">Välisõhu temperatuur <span class="value" id="temperatureVal"></span></label><input id="temperature" type="range" min="-25" max="35" value="20"></div>
+      <div class="control"><label for="snowLoss">Lume mõju <span class="value" id="snowLossVal"></span></label><input id="snowLoss" type="range" min="0" max="80" value="0"></div>
+      <div class="control"><label for="sunBoost">Päikese lisakordaja <span class="value" id="sunBoostVal"></span></label><input id="sunBoost" type="range" min="70" max="130" value="100"></div>
+    </div>
+
+    <div class="section">
+      <h2>Katus ja paneelid</h2>
+      <div class="control"><label for="roofAzimuth">Katuse suund <span class="value" id="roofAzimuthVal"></span></label>
+        <select id="roofAzimuth"><option value="-90">Ida</option><option value="-45">Kagu</option><option value="0" selected>Lõuna</option><option value="45">Edel</option><option value="90">Lääs</option><option value="180">Põhi</option></select></div>
+      <div class="control"><label for="tilt">Paneelide kaldenurk <span class="value" id="tiltVal"></span></label><input id="tilt" type="range" min="5" max="60" value="12"></div>
+      <div class="control"><label for="roofWidth">Katuse laius <span class="value" id="roofWidthVal"></span></label><input id="roofWidth" type="range" min="4" max="14" step="0.5" value="7"></div>
+      <div class="control"><label for="roofLength">Katuse pikkus <span class="value" id="roofLengthVal"></span></label><input id="roofLength" type="range" min="6" max="25" step="0.5" value="17"></div>
+      <div class="control"><label for="panelCount">Paneelide arv <span class="value" id="panelCountVal"></span></label><input id="panelCount" type="range" min="4" max="30" value="14"></div>
+      <div class="control"><label for="panelPower">Paneeli võimsus <span class="value" id="panelPowerVal"></span></label><input id="panelPower" type="range" min="350" max="650" step="5" value="455"></div>
+      <div class="control"><label for="panelEff">Paneeli kasutegur <span class="value" id="panelEffVal"></span></label><input id="panelEff" type="range" min="17" max="24" step="0.1" value="22"></div>
+      <div class="control"><label for="shade">Varjutus <span class="value" id="shadeVal"></span></label><input id="shade" type="range" min="0" max="70" value="5"></div>
+      <div class="control"><label for="dirt">Mustusekadu <span class="value" id="dirtVal"></span></label><input id="dirt" type="range" min="0" max="15" value="3"></div>
+    </div>
+
+    <div class="section">
+      <h2>Elektrisüsteem ja tarbimine</h2>
+      <div class="control"><label for="inverterPower">Inverteri võimsus <span class="value" id="inverterPowerVal"></span></label><input id="inverterPower" type="range" min="3" max="15" step="0.5" value="8"></div>
+      <div class="control"><label for="inverterEff">Inverteri kasutegur <span class="value" id="inverterEffVal"></span></label><input id="inverterEff" type="range" min="94" max="99" step="0.1" value="97.5"></div>
+      <div class="control"><label for="houseLoad">Maja päevane tarbimine <span class="value" id="houseLoadVal"></span></label><input id="houseLoad" type="range" min="2" max="40" step="0.5" value="8"></div>
+      <div class="control"><label for="loadProfile">Tarbimisprofiil <span class="value" id="loadProfileVal"></span></label>
+        <select id="loadProfile"><option value="balanced" selected>Tasakaalus kodu</option><option value="morningEvening">Hommik + õhtu tipud</option><option value="daytime">Päeval aktiivne kodu</option><option value="heatpump">Soojuspumbaga maja</option></select></div>
+      <div class="control"><label for="controlMode">Juhtimisloogika <span class="value" id="controlModeVal"></span></label>
+        <select id="controlMode"><option value="houseFirst" selected>PV → maja → paak → võrk</option><option value="tankFirst">PV → paak → maja → võrk</option><option value="balanced">PV → maja ja paak tasakaalus</option></select></div>
+    </div>
+
+    <div class="section">
+      <h2>Akupaak</h2>
+      <div class="control"><label for="hasTank">Akupaagi kasutus <span class="value" id="hasTankVal"></span></label>
+        <select id="hasTank"><option value="yes" selected>Akupaak kasutusel</option><option value="no">Akupaaki ei ole</option></select></div>
+      <div class="control"><label for="tankSize">Akupaagi maht <span class="value" id="tankSizeVal"></span></label><input id="tankSize" type="range" min="300" max="3000" step="50" value="1400"></div>
+      <div class="control"><label for="tankStartTemp">Algtemperatuur <span class="value" id="tankStartTempVal"></span></label><input id="tankStartTemp" type="range" min="20" max="80" value="40"></div>
+      <div class="control"><label for="tankTargetTemp">Sihttemperatuur <span class="value" id="tankTargetTempVal"></span></label><input id="tankTargetTemp" type="range" min="45" max="90" value="75"></div>
+      <div class="control"><label for="tankLoss">Soojuskadu päevas <span class="value" id="tankLossVal"></span></label><input id="tankLoss" type="range" min="0" max="8" step="0.2" value="2.5"></div>
+      <div class="control"><label for="heaterPower">Küttekeha võimsus <span class="value" id="heaterPowerVal"></span></label><input id="heaterPower" type="range" min="1" max="9" step="0.5" value="3"></div>
+    </div>
+
+    <div class="section">
+      <h2>Tasuvus</h2>
+      <div class="control"><label for="electricityPrice">Elektri hind <span class="value" id="electricityPriceVal"></span></label><input id="electricityPrice" type="range" min="0.08" max="0.35" step="0.01" value="0.18"></div>
+      <div class="control"><label for="gridSellPrice">Võrku müügi hind <span class="value" id="gridSellPriceVal"></span></label><input id="gridSellPrice" type="range" min="0.03" max="0.18" step="0.01" value="0.07"></div>
+      <div class="control"><label for="systemCost">Süsteemi maksumus <span class="value" id="systemCostVal"></span></label><input id="systemCost" type="range" min="3000" max="15000" step="100" value="6500"></div>
+      <div class="control"><label for="annualDegradation">Paneelide vananemine aastas <span class="value" id="annualDegradationVal"></span></label><input id="annualDegradation" type="range" min="0" max="1.2" step="0.05" value="0.5"></div>
+      <div class="control"><label for="priceGrowth">Elektri hinnakasv aastas <span class="value" id="priceGrowthVal"></span></label><input id="priceGrowth" type="range" min="0" max="8" step="0.5" value="2"></div>
+    </div>
+
+    <div class="btnrow"><button class="primary" id="recalcBtn">Arvuta uuesti</button><button id="presetBtn">Taasta soovituslik</button></div>
+  </aside>
+
+  <main class="main">
+    <section class="metrics">
+      <div class="metric card"><div class="k">Süsteemi võimsus</div><div class="v" id="mSystem">0</div><div class="s">kWp</div></div>
+      <div class="metric card"><div class="k">Vaadeldava kuu päevatoodang</div><div class="v" id="mProd">0</div><div class="s">kWh/p</div></div>
+      <div class="metric card"><div class="k">Majja kasutusse</div><div class="v" id="mHouse">0</div><div class="s">kWh/p</div></div>
+      <div class="metric card"><div class="k">Akupaaki</div><div class="v" id="mTank">0</div><div class="s">kWh/p</div></div>
+      <div class="metric card"><div class="k">Võrku / ülejääk</div><div class="v" id="mGrid">0</div><div class="s">kWh/p</div></div>
+      <div class="metric card"><div class="k">Akupaagi lõpptemp</div><div class="v" id="mTemp">0</div><div class="s">°C</div></div>
+      <div class="metric card"><div class="k">Aastane tootmine</div><div class="v" id="mAnnual">0</div><div class="s">kWh/a</div></div>
+      <div class="metric card"><div class="k">Tasuvus</div><div class="v" id="mPayback">0</div><div class="s">aastat</div></div>
+    </section>
+
+    <section class="grid2">
+      <div class="card">
+        <h3>Peavaade: lohistatav päike, mõõtkavas katus ja akupaak</h3>
+        <div class="sceneWrap"><svg id="scene" viewBox="0 0 1040 430"></svg></div>
+        <div class="legend">
+          <span class="chip"><span class="dot" style="background:#ffd54a"></span>Päikese kiired</span>
+          <span class="chip"><span class="dot" style="background:#1f78ff"></span>Paneelidest elekter</span>
+          <span class="chip"><span class="dot" style="background:#1ea971"></span>Majja</span>
+          <span class="chip"><span class="dot" style="background:#ff9f1c"></span>Akupaaki</span>
+          <span class="chip"><span class="dot" style="background:#d83b3b"></span>Võrku</span>
+          <span class="chip"><span class="dot" style="background:#8a5cff"></span>Kihistumine</span>
+        </div>
+        <div class="status" id="statusBox"></div>
+      </div>
+      <div class="card">
+        <h3>Selgitused</h3>
+        <div class="info" id="explainBox"></div>
+        <div class="chartBox" style="margin-top:10px"><canvas id="angleChart" width="560" height="260"></canvas></div>
+      </div>
+    </section>
+
+    <section class="charts">
+      <div class="card"><h3>Tunnipõhine päevaprofiil</h3><div class="chartBox"><canvas id="dayChart" width="700" height="300"></canvas></div></div>
+      <div class="card"><h3>Akupaagi kihistumine</h3><div class="chartBox"><canvas id="tempChart" width="700" height="300"></canvas></div></div>
+    </section>
+
+    <section class="charts">
+      <div class="card"><h3>Kuupõhine Eesti tootmistabel ja energiabilanss</h3><div class="wideTable"><table><thead><tr><th>Kuu</th><th>PV kWh/kuu</th><th>Majja</th><th>Paaki</th><th>Võrku</th><th>Oma tarbimine %</th><th>Sääst €/kuu</th></tr></thead><tbody id="monthlyTable"></tbody></table></div></div>
+      <div class="card"><h3>Kuude lõikes tootmine ja sääst</h3><div class="chartBox"><canvas id="monthlyChart" width="700" height="300"></canvas></div></div>
+    </section>
+
+    <section class="triple">
+      <div class="card"><h3>Tunnipõhine tabel</h3><div style="max-height:360px;overflow:auto"><table><thead><tr><th>Tund</th><th>PV</th><th>Maja</th><th>Paak</th><th>Võrk</th><th>Ülemine °C</th><th>Alumine °C</th></tr></thead><tbody id="hourTable"></tbody></table></div></div>
+      <div class="card"><h3>Stsenaariumid 6 / 8 / 10 kWp</h3><div class="scenarioGrid" id="scenarioGrid"></div></div>
+    </section>
+
+    <section class="bottom">
+      <div class="card"><h3>Kokkuvõttev süsteemitabel</h3><table><tbody id="summaryTable"></tbody></table></div>
+      <div class="card"><h3>Füüsika ja tehnika tabel</h3><table><tbody id="physicsTable"></tbody></table></div>
+    </section>
+
+    <section class="card">
+      <h3>Tasuvus aastates (täisvaade)</h3>
+      <div class="financeGrid">
+        <div><h3>Tasuvus aastates</h3><table><tbody id="financeTable"></tbody></table></div>
+        <div><h3>Kumulatiivne rahaline mõju</h3><div class="chartBox"><canvas id="financeChart" width="760" height="320"></canvas></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const monthNames=["jaanuar","veebruar","märts","aprill","mai","juuni","juuli","august","september","oktoober","november","detsember"];
+const monthDays=[31,28,31,30,31,30,31,31,30,31,30,31];
+const irrMonth=[0.55,1.35,2.8,4.25,5.25,5.65,5.45,4.55,3.05,1.7,0.8,0.42];
+const tempMonth=[-5,-4,0,6,12,17,19,18,13,7,2,-3];
+const defaults={month:7,weatherPreset:"mixed",cloudiness:35,temperature:20,snowLoss:0,sunBoost:100,hasTank:"yes",roofAzimuth:"0",tilt:12,roofWidth:7,roofLength:17,panelCount:14,panelPower:455,panelEff:22,shade:5,dirt:3,inverterPower:8,inverterEff:97.5,houseLoad:8,loadProfile:"balanced",controlMode:"houseFirst",tankSize:1400,tankStartTemp:40,tankTargetTemp:75,tankLoss:2.5,heaterPower:3,electricityPrice:0.18,gridSellPrice:0.07,systemCost:6500,annualDegradation:0.5,priceGrowth:2};
+let sunPos={x:130,y:80}, dragSun=false;
+const ids=Object.keys(defaults);
+
+function fmt(n,d=1){return Number(n).toFixed(d).replace(".",",");}
+function setText(id,val){document.getElementById(id).textContent=val;}
+
+function applyWeatherPreset(){
+  const p=document.getElementById("weatherPreset").value;
+  const c=document.getElementById("cloudiness");
+  if(p==="sunny") c.value=10;
+  if(p==="mixed") c.value=35;
+  if(p==="cloudy") c.value=70;
+}
+function getValues(){
+  const v={};
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    v[id]=el.type==="range" ? Number(el.value) : el.value;
+  });
+  v.panelEff/=100; v.inverterEff/=100; v.sunBoost/=100; v.annualDegradation/=100; v.priceGrowth/=100;
+  return v;
+}
+function updateLabels(v){
+  setText("monthVal", monthNames[v.month-1]);
+  setText("weatherPresetVal", document.getElementById("weatherPreset").selectedOptions[0].text);
+  setText("cloudinessVal", fmt(v.cloudiness,0)+"%");
+  setText("temperatureVal", fmt(v.temperature,0)+" °C");
+  setText("snowLossVal", fmt(v.snowLoss,0)+"%");
+  setText("sunBoostVal", fmt(v.sunBoost*100,0)+"%");
+  setText("roofAzimuthVal", document.getElementById("roofAzimuth").selectedOptions[0].text);
+  setText("tiltVal", fmt(v.tilt,0)+"°");
+  setText("roofWidthVal", fmt(v.roofWidth,1)+" m");
+  setText("roofLengthVal", fmt(v.roofLength,1)+" m");
+  setText("panelCountVal", fmt(v.panelCount,0)+" tk");
+  setText("panelPowerVal", fmt(v.panelPower,0)+" W");
+  setText("panelEffVal", fmt(v.panelEff*100,1)+"%");
+  setText("shadeVal", fmt(v.shade,0)+"%");
+  setText("dirtVal", fmt(v.dirt,0)+"%");
+  setText("inverterPowerVal", fmt(v.inverterPower,1)+" kW");
+  setText("inverterEffVal", fmt(v.inverterEff*100,1)+"%");
+  setText("houseLoadVal", fmt(v.houseLoad,1)+" kWh/p");
+  setText("loadProfileVal", document.getElementById("loadProfile").selectedOptions[0].text);
+  setText("controlModeVal", document.getElementById("controlMode").selectedOptions[0].text);
+  setText("hasTankVal", document.getElementById("hasTank").selectedOptions[0].text);
+  setText("tankSizeVal", fmt(v.tankSize,0)+" l");
+  setText("tankStartTempVal", fmt(v.tankStartTemp,0)+" °C");
+  setText("tankTargetTempVal", fmt(v.tankTargetTemp,0)+" °C");
+  setText("tankLossVal", fmt(v.tankLoss,1)+" kWh/p");
+  setText("heaterPowerVal", fmt(v.heaterPower,1)+" kW");
+  setText("electricityPriceVal", fmt(v.electricityPrice,2)+" €/kWh");
+  setText("gridSellPriceVal", fmt(v.gridSellPrice,2)+" €/kWh");
+  setText("systemCostVal", fmt(v.systemCost,0)+" €");
+  setText("annualDegradationVal", fmt(v.annualDegradation*100,2)+"%");
+  setText("priceGrowthVal", fmt(v.priceGrowth*100,1)+"%");
+}
+function dayLength(month){return [7,9,12,15,17,18,17,15,12,10,8,6][month-1];}
+function orientationFactor(az){const a=Math.abs(Number(az)); if(a===180) return 0.42; return Math.max(0.55, Math.cos(a*Math.PI/180)*0.45+0.55);}
+function tiltFactor(tilt,month){const opt=(month>=11||month<=2)?50:((month>=5&&month<=8)?30:35); const diff=Math.abs(tilt-opt); return Math.max(0.72,1-diff*0.0065);}
+function tempFactor(temp){return 1-Math.max(0,temp-20)*0.0035;}
+function cloudFactor(cloud){return Math.max(0.18,1-cloud*0.0082);}
+function sunDragFactor(){const horiz=Math.min(1,Math.max(0,(sunPos.x-40)/240)); const vert=1-Math.min(1,Math.max(0,(sunPos.y-40)/130)); return 0.8+0.28*((horiz+vert)/2);}
+function houseProfile(dayKwh, profile){
+  let w;
+  if(profile==="morningEvening") w=[0.03,0.025,0.025,0.025,0.03,0.05,0.08,0.09,0.06,0.04,0.03,0.03,0.03,0.03,0.03,0.04,0.06,0.08,0.10,0.11,0.09,0.06,0.04,0.035];
+  else if(profile==="daytime") w=[0.03,0.03,0.03,0.03,0.03,0.035,0.04,0.045,0.05,0.06,0.07,0.075,0.075,0.07,0.065,0.06,0.05,0.045,0.04,0.04,0.04,0.04,0.035,0.03];
+  else if(profile==="heatpump") w=[0.045,0.045,0.045,0.045,0.045,0.05,0.05,0.05,0.045,0.04,0.035,0.035,0.035,0.035,0.035,0.04,0.045,0.05,0.055,0.06,0.06,0.055,0.05,0.045];
+  else w=[0.04,0.035,0.03,0.03,0.03,0.04,0.05,0.06,0.05,0.04,0.035,0.035,0.035,0.035,0.035,0.04,0.045,0.055,0.07,0.08,0.075,0.06,0.05,0.045];
+  const sum=w.reduce((a,b)=>a+b,0); return w.map(x=>x/sum*dayKwh);
+}
+function sunProfile(dayKwh, month){
+  const len=dayLength(month), start=12-len/2, arr=new Array(24).fill(0); let sum=0;
+  const dragShift=((sunPos.x-130)/130)*1.5;
+  for(let h=0; h<24; h++){
+    const center=h+0.5, x=(center-(start+dragShift))/len;
+    if(x>=0 && x<=1){const peak=1.15+Math.max(0,(110-sunPos.y)/200); const val=Math.sin(Math.PI*x)**peak; arr[h]=val; sum+=val;}
+  }
+  return arr.map(v=>sum?dayKwh*v/sum:0);
+}
+function scenarioPanelCount(targetKwp,panelPower){return Math.round(targetKwp*1000/panelPower);}
+
+function simulateMonth(v, monthOverride=null, weatherAdjust=null, systemKwpOverride=null){
+  const m=monthOverride||v.month;
+  const systemKwp=systemKwpOverride || (v.panelCount*v.panelPower/1000);
+  const cloud=weatherAdjust && weatherAdjust.cloudiness!==undefined ? weatherAdjust.cloudiness : v.cloudiness;
+  const ambient=weatherAdjust && weatherAdjust.temperature!==undefined ? weatherAdjust.temperature : v.temperature;
+  const snow=weatherAdjust && weatherAdjust.snowLoss!==undefined ? weatherAdjust.snowLoss : v.snowLoss;
+  const roofArea=v.roofWidth*v.roofLength;
+  const panelAreaEach=v.panelPower/(1000*v.panelEff);
+  const count=systemKwpOverride ? scenarioPanelCount(systemKwpOverride,v.panelPower) : v.panelCount;
+  const usedArea=count*panelAreaEach;
+  const coverage=Math.min(100, usedArea/roofArea*100);
+  const dailyPV=Math.max(0, systemKwp*irrMonth[m-1]*cloudFactor(cloud)*v.sunBoost*orientationFactor(v.roofAzimuth)*tiltFactor(v.tilt,m)*tempFactor(ambient)*(1-v.shade/100)*(1-v.dirt/100)*(1-snow/100)*v.inverterEff*sunDragFactor());
+
+  const pvHours=sunProfile(dailyPV,m);
+  const houseHours=houseProfile(v.houseLoad,v.loadProfile);
+  const tankEnabled=v.hasTank!=="no";
+  const degreeKwh=(tankEnabled?v.tankSize:0)*0.001163;
+  const heatCapTop=Math.max(0.0001,degreeKwh*0.38), heatCapBottom=Math.max(0.0001,degreeKwh*0.62);
+  let topTemp=tankEnabled ? v.tankStartTemp+3 : v.tankStartTemp;
+  let bottomTemp=tankEnabled ? v.tankStartTemp-1 : v.tankStartTemp;
+  let houseUseTotal=0,tankUseTotal=0,gridTotal=0,boughtTotal=0;
+  const rows=[], topSeries=[], bottomSeries=[], pvSeries=[], tankSeries=[], houseSeries=[], gridSeries=[];
+
+  for(let h=0; h<24; h++){
+    const pv=pvHours[h], houseNeed=houseHours[h];
+    const roomTop=tankEnabled ? Math.max(0,(v.tankTargetTemp-topTemp)*heatCapTop) : 0;
+    const roomBottom=tankEnabled ? Math.max(0,(Math.min(v.tankTargetTemp-8,v.tankTargetTemp)-bottomTemp)*heatCapBottom) : 0;
+    const tankRoom=roomTop+roomBottom;
+    const heaterCap=tankEnabled ? v.heaterPower : 0;
+    let houseUse=0,tankUse=0,grid=0;
+
+    if(v.controlMode==="houseFirst"){
+      houseUse=Math.min(pv,houseNeed);
+      const rem=pv-houseUse;
+      tankUse=Math.min(rem,heaterCap,tankRoom);
+      grid=Math.max(0,rem-tankUse);
+      boughtTotal += Math.max(0,houseNeed-houseUse);
+    } else if(v.controlMode==="tankFirst"){
+      tankUse=Math.min(pv,heaterCap,tankRoom);
+      const rem=pv-tankUse;
+      houseUse=Math.min(rem,houseNeed);
+      grid=Math.max(0,rem-houseUse);
+      boughtTotal += Math.max(0,houseNeed-houseUse);
+    } else {
+      houseUse=Math.min(houseNeed,pv*0.55);
+      let rem=pv-houseUse;
+      tankUse=Math.min(rem,heaterCap,tankRoom);
+      const left=pv-houseUse-tankUse;
+      if(houseUse<houseNeed) houseUse += Math.max(0,Math.min(left,houseNeed-houseUse));
+      grid=Math.max(0,pv-houseUse-tankUse);
+      boughtTotal += Math.max(0,houseNeed-houseUse);
+    }
+
+    if(tankEnabled){
+      let remain=tankUse;
+      const topGain=Math.min(remain, roomTop*0.85 + 9999);
+      topTemp += topGain/heatCapTop; remain -= topGain;
+      if(remain>0) bottomTemp += remain/heatCapBottom;
+      if(bottomTemp > topTemp-2){const avg=(topTemp+bottomTemp)/2; topTemp=avg+1; bottomTemp=avg-1;}
+      const hourlyLoss=v.tankLoss/24;
+      topTemp=Math.max(v.tankStartTemp, topTemp-hourlyLoss/Math.max(0.0001,degreeKwh*0.42));
+      bottomTemp=Math.max(v.tankStartTemp-4, bottomTemp-hourlyLoss/Math.max(0.0001,degreeKwh*0.78));
+      topTemp=Math.min(v.tankTargetTemp, topTemp);
+      bottomTemp=Math.min(v.tankTargetTemp-3, bottomTemp);
+    }
+
+    houseUseTotal+=houseUse; tankUseTotal+=tankUse; gridTotal+=grid;
+    rows.push({hour:String(h).padStart(2,"0")+":00", pv:pv, house:houseUse, tank:tankUse, grid:grid, top:topTemp, bottom:bottomTemp});
+    pvSeries.push(pv); houseSeries.push(houseNeed); tankSeries.push(tankUse); gridSeries.push(grid); topSeries.push(topTemp); bottomSeries.push(bottomTemp);
+  }
+
+  const avgTemp=tankEnabled ? (topTemp*0.4+bottomTemp*0.6) : 0;
+  const selfUse=dailyPV>0 ? (houseUseTotal+tankUseTotal)/dailyPV*100 : 0;
+  const tankCapacity=tankEnabled ? degreeKwh*Math.max(0,v.tankTargetTemp-v.tankStartTemp) : 0;
+  const dailySavings=houseUseTotal*v.electricityPrice + tankUseTotal*v.electricityPrice + gridTotal*v.gridSellPrice;
+  return {month:m,systemKwp,roofArea,usedArea,coverage,dailyPV,houseUseTotal,tankUseTotal,gridTotal,boughtTotal,topTemp,bottomTemp,avgTemp,selfUse,tankCapacity,dailySavings,rows,pvSeries,houseSeries,tankSeries,gridSeries,topSeries,bottomSeries};
+}
+
+function yearlyModel(v, systemKwpOverride=null){
+  const monthly=[]; let annualPV=0, annualHouse=0, annualTank=0, annualGrid=0, annualBought=0, annualSavings=0;
+  for(let m=1;m<=12;m++){
+    let cloud=Math.max(0,Math.min(100,v.cloudiness+[10,8,4,0,-4,-6,-6,-4,0,4,8,10][m-1]));
+    let snow=v.snowLoss;
+    if(m<=3||m===11||m===12) snow=Math.max(snow,[55,45,20,0,0,0,0,0,0,5,20,45][m-1]);
+    const sim=simulateMonth(v,m,{cloudiness:cloud,temperature:tempMonth[m-1],snowLoss:snow},systemKwpOverride);
+    const days=monthDays[m-1];
+    const pv=sim.dailyPV*days, house=sim.houseUseTotal*days, tank=sim.tankUseTotal*days, grid=sim.gridTotal*days, bought=sim.boughtTotal*days, save=sim.dailySavings*days;
+    annualPV+=pv; annualHouse+=house; annualTank+=tank; annualGrid+=grid; annualBought+=bought; annualSavings+=save;
+    monthly.push({month:m,pv:pv,house:house,tank:tank,grid:grid,bought:bought,save:save,selfUse:sim.dailyPV>0 ? (sim.houseUseTotal+sim.tankUseTotal)/sim.dailyPV*100 : 0});
+  }
+  const paybackSimple=annualSavings>0 ? v.systemCost/annualSavings : Infinity;
+  let cumulative=-v.systemCost; const years=[];
+  for(let y=1;y<=15;y++){
+    const degradation=Math.max(0,1-(y-1)*v.annualDegradation);
+    const priceMult=Math.pow(1+v.priceGrowth,y-1);
+    const yearSavings=annualSavings*degradation*priceMult;
+    cumulative+=yearSavings;
+    years.push({year:y,yearSavings:yearSavings,cumulative:cumulative});
+  }
+  const found=years.find(x=>x.cumulative>=0);
+  return {monthly,annualPV,annualHouse,annualTank,annualGrid,annualBought,annualSavings,paybackSimple,paybackDetailed:found?found.year:Infinity,years};
+}
+
+function drawLineChart(canvasId, seriesDefs, labels, fixedMax=null){
+  const c=document.getElementById(canvasId), ctx=c.getContext("2d"), W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const pad={l:46,r:14,t:18,b:30}, plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+  let maxY=fixedMax||1;
+  if(!fixedMax){maxY=0; seriesDefs.forEach(s=>s.data.forEach(v=>{if(v>maxY) maxY=v;})); maxY=(maxY||1)*1.12;}
+  ctx.strokeStyle="#d8e5f0"; ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const y=pad.t+plotH*i/5;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+    ctx.fillStyle="#607487"; ctx.font="11px Arial"; ctx.fillText((maxY-maxY*i/5).toFixed(1).replace(".",","),7,y+4);
+  }
+  for(let i=0;i<labels.length;i+=Math.max(1,Math.floor(labels.length/6))){
+    const x=pad.l+plotW*i/(labels.length-1);
+    ctx.fillStyle="#607487"; ctx.font="11px Arial"; ctx.fillText(labels[i],x-8,H-8);
+  }
+  let lx=pad.l, ly=11;
+  seriesDefs.forEach(s=>{ctx.fillStyle=s.color; ctx.fillRect(lx,ly-8,12,4); ctx.fillStyle="#42596e"; ctx.font="12px Arial"; ctx.fillText(s.name,lx+18,ly); lx+=ctx.measureText(s.name).width+52;});
+  seriesDefs.forEach(s=>{
+    ctx.strokeStyle=s.color; ctx.lineWidth=2.5; ctx.beginPath();
+    s.data.forEach((v,i)=>{const x=pad.l+plotW*i/(s.data.length-1); const y=pad.t+plotH*(1-v/maxY); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);});
+    ctx.stroke();
+  });
+}
+
+function drawBarChart(canvasId, labels, vals, colors, formatter){
+  const c=document.getElementById(canvasId), ctx=c.getContext("2d"), W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const pad={l:44,r:16,t:18,b:36}, plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+  const max=Math.max(...vals,1)*1.15;
+  ctx.strokeStyle="#d8e5f0";
+  for(let i=0;i<=5;i++){const y=pad.t+plotH*i/5; ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke(); ctx.fillStyle="#607487"; ctx.font="11px Arial"; ctx.fillText((max-max*i/5).toFixed(0).replace(".",","),8,y+4);}
+  const bw=plotW/(vals.length*1.7);
+  vals.forEach((v,i)=>{const x=pad.l+(i+0.35)*(plotW/vals.length); const h=plotH*(v/max); ctx.fillStyle=colors[i]; ctx.fillRect(x,pad.t+plotH-h,bw,h); ctx.fillStyle="#42596e"; ctx.font="12px Arial"; ctx.fillText(labels[i],x-2,H-10); ctx.fillText(formatter?formatter(v):String(v),x-6,pad.t+plotH-h-6);});
+}
+
+function renderFinanceChart(year, v){
+  const c=document.getElementById("financeChart"), ctx=c.getContext("2d"), W=c.width, H=c.height;
+  ctx.clearRect(0,0,W,H);
+  const pad={l:56,r:18,t:20,b:34}, plotW=W-pad.l-pad.r, plotH=H-pad.t-pad.b;
+  const years=year.years.map(x=>x.year), detailed=year.years.map(x=>x.cumulative);
+  const simple=[]; let cum=-v.systemCost; for(let y=1;y<=15;y++){cum+=year.annualSavings; simple.push(cum);}
+  let minY=Math.min(0,...detailed,...simple), maxY=Math.max(0,...detailed,...simple), span=Math.max(1,maxY-minY);
+  minY-=span*0.08; maxY+=span*0.08;
+
+  ctx.strokeStyle="#d8e5f0"; ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){const y=pad.t+plotH*i/5; ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke(); const val=maxY-(maxY-minY)*i/5; ctx.fillStyle="#607487"; ctx.font="11px Arial"; ctx.fillText(val.toFixed(0).replace(".",","),8,y+4);}
+  const zeroY=pad.t+plotH*(1-(0-minY)/(maxY-minY));
+  ctx.strokeStyle="#d83b3b"; ctx.setLineDash([6,5]); ctx.beginPath(); ctx.moveTo(pad.l,zeroY); ctx.lineTo(W-pad.r,zeroY); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle="#d83b3b"; ctx.font="12px Arial"; ctx.fillText("0 €",W-pad.r-24,zeroY-6);
+
+  for(let i=0;i<years.length;i+=2){const x=pad.l+plotW*i/(years.length-1); ctx.fillStyle="#607487"; ctx.font="11px Arial"; ctx.fillText(String(years[i]),x-5,H-10);}
+  let lx=pad.l, ly=12;
+  [["Detailsem tasuvus","#1ea971"],["Lihtne tasuvus","#8a5cff"]].forEach(([n,col])=>{ctx.fillStyle=col; ctx.fillRect(lx,ly-8,12,4); ctx.fillStyle="#42596e"; ctx.font="12px Arial"; ctx.fillText(n,lx+18,ly); lx+=ctx.measureText(n).width+50;});
+
+  function drawSeries(data,color){ctx.strokeStyle=color; ctx.lineWidth=2.5; ctx.beginPath(); data.forEach((v,i)=>{const x=pad.l+plotW*i/(data.length-1); const y=pad.t+plotH*(1-(v-minY)/(maxY-minY)); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);}); ctx.stroke();}
+  drawSeries(detailed,"#1ea971"); drawSeries(simple,"#8a5cff");
+
+  if(Number.isFinite(year.paybackDetailed)){const i=year.paybackDetailed-1; const x=pad.l+plotW*i/(years.length-1); const y=pad.t+plotH*(1-(detailed[i]-minY)/(maxY-minY)); ctx.fillStyle="#1ea971"; ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill(); ctx.fillText("Murdepunkt",x+8,y-8);}
+  const simplePay=Math.ceil(v.systemCost/Math.max(0.0001,year.annualSavings));
+  if(simplePay>=1 && simplePay<=15){const i=simplePay-1; const x=pad.l+plotW*i/(years.length-1); const y=pad.t+plotH*(1-(simple[i]-minY)/(maxY-minY)); ctx.fillStyle="#8a5cff"; ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2); ctx.fill(); ctx.fillText("Lihtne murdepunkt",x+8,y+16);}
+}
+
+function renderScene(v,s){
+  const svg=document.getElementById("scene");
+  const rows=Math.max(2,Math.ceil(v.panelCount/4)), cols=Math.ceil(v.panelCount/rows);
+  const roofX=520, roofY=120, roofW=280, roofH=120;
+  const scaleX=(roofW-30)/Math.max(1,cols), scaleY=(roofH-18)/Math.max(1,rows);
+  let panels="", idx=0;
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      if(idx>=v.panelCount) continue;
+      const x=roofX+18+c*scaleX-r*2, y=roofY+18+r*scaleY+c*1.3, pw=Math.max(28,scaleX-7), ph=Math.max(14,scaleY-7);
+      panels += `<g transform="translate(${x},${y}) rotate(${-v.tilt*0.50})">
+        <rect x="0" y="0" width="${pw}" height="${ph}" rx="2" fill="#1d4e89" stroke="#9ed0ff" stroke-width="1.1"/>
+        <line x1="8" y1="0" x2="8" y2="${ph}" stroke="#8fc0ff" opacity=".65"/>
+        <line x1="16" y1="0" x2="16" y2="${ph}" stroke="#8fc0ff" opacity=".65"/>
+        <line x1="0" y1="6" x2="${pw}" y2="6" stroke="#8fc0ff" opacity=".65"/>
+      </g>`;
+      idx++;
+    }
+  }
+  let rays="";
+  for(let i=0;i<6;i++){const px=roofX+40+i*34, py=roofY+40+i*8; rays += `<path d="M ${sunPos.x+20} ${sunPos.y+10+i*2} C ${sunPos.x+110} ${sunPos.y+30+i*8}, ${px-40} ${py-8}, ${px} ${py}" stroke="rgba(255,196,0,${0.20+i*0.08})" stroke-width="${3.6+i*0.7}" fill="none" stroke-linecap="round"/>`;}
+  const topPct=Math.max(0,Math.min(1, v.hasTank==="no" ? 0 : (s.topTemp-(v.tankStartTemp-2))/((v.tankTargetTemp-(v.tankStartTemp-2))||1)));
+  const bottomPct=Math.max(0,Math.min(1, v.hasTank==="no" ? 0 : (s.bottomTemp-(v.tankStartTemp-4))/((v.tankTargetTemp-(v.tankStartTemp-4))||1)));
+  const topH=58*topPct, bottomH=62*bottomPct;
+  const flowHouse=4+Math.min(14,s.houseUseTotal/1.2), flowTank=4+Math.min(14,s.tankUseTotal/1.3), flowGrid=3+Math.min(12,s.gridTotal/1.3);
+
+  svg.innerHTML = `
+  <defs>
+    <linearGradient id="sunG" x1="0" x2="1"><stop offset="0%" stop-color="#ffe37c"/><stop offset="100%" stop-color="#ffc53a"/></linearGradient>
+    <linearGradient id="roofG" x1="0" x2="1"><stop offset="0%" stop-color="#7d8591"/><stop offset="100%" stop-color="#636c77"/></linearGradient>
+    <linearGradient id="waterTop" x1="0" x2="0" y1="1" y2="0"><stop offset="0%" stop-color="#ff8b31"/><stop offset="100%" stop-color="#ffd064"/></linearGradient>
+    <linearGradient id="waterBottom" x1="0" x2="0" y1="1" y2="0"><stop offset="0%" stop-color="#8a5cff"/><stop offset="100%" stop-color="#bd9cff"/></linearGradient>
+    <marker id="aBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f78ff"/></marker>
+    <marker id="aGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1ea971"/></marker>
+    <marker id="aOrange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ff9f1c"/></marker>
+    <marker id="aRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d83b3b"/></marker>
+  </defs>
+  <circle id="sunDragger" cx="${sunPos.x}" cy="${sunPos.y}" r="52" fill="url(#sunG)" stroke="#ffcf55" stroke-width="4" style="cursor:grab"/>
+  <text x="${sunPos.x-28}" y="${sunPos.y+6}" font-size="16" font-weight="800" fill="#8a5b00">${fmt((1-v.cloudiness/100)*100,0)}%</text>
+  <text x="${sunPos.x-34}" y="${sunPos.y+74}" font-size="12" fill="#6c7f91">Lohista päikest</text>
+  ${rays}
+  <rect x="0" y="308" width="1040" height="122" fill="#b8d79d"/>
+  <rect x="0" y="286" width="1040" height="24" fill="#cfe3bc"/>
+
+  <rect x="470" y="188" width="330" height="118" rx="6" fill="#fff" stroke="#cfdbe6" stroke-width="2"/>
+  <polygon points="454,196 635,96 816,196" fill="url(#roofG)" stroke="#54606c" stroke-width="2"/>
+  <line x1="635" y1="96" x2="635" y2="188" stroke="#4c5661" stroke-width="3"/>
+  <rect x="525" y="232" width="64" height="74" fill="#ba7b48"/>
+  <rect x="646" y="220" width="62" height="42" fill="#d8eefc" stroke="#86b9da"/>
+  <rect x="725" y="220" width="42" height="34" fill="#d8eefc" stroke="#86b9da"/>
+  ${panels}
+  <path d="M 598 198 A 88 88 0 0 1 ${598+84*Math.cos((90-v.tilt)*Math.PI/180)} ${198-84*Math.sin((90-v.tilt)*Math.PI/180)}" fill="none" stroke="#1f78ff" stroke-width="3" stroke-dasharray="6 5"/>
+  <text x="648" y="168" font-size="15" font-weight="800" fill="#1f78ff">${v.tilt}°</text>
+
+  <rect x="832" y="170" width="102" height="82" rx="12" fill="#f6fbff" stroke="#9ac8ef" stroke-width="2"/>
+  <text x="857" y="205" font-size="16" font-weight="800" fill="#1f78ff">Inverter</text>
+  <text x="849" y="226" font-size="12" fill="#47627a">${fmt(v.inverterPower,1)} kW</text>
+
+  <rect x="846" y="262" width="92" height="118" rx="18" fill="#f8fbfd" stroke="#b6c8da" stroke-width="2" opacity="${v.hasTank==='no'?0.35:1}"/>
+  <rect x="854" y="${372-bottomH}" width="76" height="${bottomH}" rx="10" fill="url(#waterBottom)" opacity="${v.hasTank==='no'?0.15:0.95}"/>
+  <rect x="854" y="${312-topH}" width="76" height="${topH}" rx="10" fill="url(#waterTop)" opacity="${v.hasTank==='no'?0.15:0.97}"/>
+  <line x1="854" y1="322" x2="930" y2="322" stroke="#ffffff" stroke-width="2" stroke-dasharray="5 4"/>
+  <text x="948" y="300" font-size="12" fill="#6d7d8c">ülemine kiht</text>
+  <text x="948" y="342" font-size="12" fill="#6d7d8c">alumine kiht</text>
+  <text x="859" y="304" font-size="13" font-weight="800" fill="#7d4500">${v.hasTank==='no' ? '—' : fmt(s.topTemp,0)+'°C'}</text>
+  <text x="859" y="366" font-size="13" font-weight="800" fill="#4e339f">${v.hasTank==='no' ? '—' : fmt(s.bottomTemp,0)+'°C'}</text>
+  <text x="858" y="398" font-size="13" font-weight="800" fill="#38556d">${v.hasTank==='no' ? 'Akupaaki ei ole' : 'Akupaak'}</text>
+
+  <rect x="966" y="164" width="46" height="136" rx="6" fill="#f8fafc" stroke="#c8d5e2" stroke-width="2"/>
+  <line x1="989" y1="164" x2="989" y2="130" stroke="#718190" stroke-width="4"/>
+  <line x1="989" y1="130" x2="977" y2="146" stroke="#718190" stroke-width="4"/>
+  <line x1="989" y1="130" x2="1001" y2="146" stroke="#718190" stroke-width="4"/>
+  <text x="968" y="322" font-size="13" font-weight="800" fill="#42596e">Võrk</text>
+
+  <path d="M 800 192 C 813 188, 820 188, 832 195" fill="none" stroke="#1f78ff" stroke-width="${flowHouse}" marker-end="url(#aBlue)" stroke-linecap="round"/>
+  <path d="M 884 252 C 884 255, 884 258, 884 262" fill="none" stroke="#ff9f1c" stroke-width="${flowTank}" marker-end="url(#aOrange)" stroke-linecap="round"/>
+  <path d="M 935 208 C 948 208, 954 208, 965 208" fill="none" stroke="#d83b3b" stroke-width="${flowGrid}" marker-end="url(#aRed)" stroke-linecap="round"/>
+  <path d="M 832 224 C 792 246, 760 260, 704 266" fill="none" stroke="#1ea971" stroke-width="${flowHouse}" marker-end="url(#aGreen)" stroke-linecap="round"/>
+
+  <g opacity="${Math.min(0.9,v.shade/70+0.05)}">
+    <rect x="405" y="230" width="12" height="78" fill="#7f5d3f"/>
+    <circle cx="411" cy="205" r="40" fill="#70b36c"/>
+    <circle cx="388" cy="220" r="29" fill="#76b973"/>
+    <circle cx="434" cy="222" r="27" fill="#66a961"/>
+    <text x="365" y="276" font-size="12" fill="#456174">varjutus</text>
+  </g>
+
+  <text x="482" y="332" font-size="15" font-weight="800" fill="#30485c">Maja ja katuse pind mõõtkavas</text>
+  <text x="482" y="350" font-size="13" fill="#5f7488">Katus: ${fmt(v.roofWidth,1)} × ${fmt(v.roofLength,1)} m · paneele: ${v.panelCount} tk</text>
+  <text x="482" y="368" font-size="13" fill="#5f7488">Süsteemi võimsus: ${fmt(s.systemKwp,2)} kWp · suund: ${document.getElementById("roofAzimuth").selectedOptions[0].text}</text>`;
+  attachSunDrag();
+}
+
+function attachSunDrag(){
+  const svg=document.getElementById("scene"), sun=document.getElementById("sunDragger");
+  if(!sun) return;
+  sun.onmousedown=(e)=>{dragSun=true; e.preventDefault();};
+  svg.onmousemove=(e)=>{
+    if(!dragSun) return;
+    const pt=svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY;
+    const loc=pt.matrixTransform(svg.getScreenCTM().inverse());
+    sunPos.x=Math.max(70,Math.min(270,loc.x));
+    sunPos.y=Math.max(45,Math.min(150,loc.y));
+    update();
+  };
+  window.onmouseup=()=>{dragSun=false;};
+}
+
+function renderMetrics(v,s,year){
+  setText("mSystem", fmt(s.systemKwp,2));
+  setText("mProd", fmt(s.dailyPV,1));
+  setText("mHouse", fmt(s.houseUseTotal,1));
+  setText("mTank", fmt(s.tankUseTotal,1));
+  setText("mGrid", fmt(s.gridTotal,1));
+  setText("mTemp", v.hasTank==="no" ? "—" : fmt(s.avgTemp,1));
+  setText("mAnnual", fmt(year.annualPV,0));
+  setText("mPayback", Number.isFinite(year.paybackDetailed) ? year.paybackDetailed : "15+");
+}
+
+function renderExplain(v,s,year){
+  const tankText = v.hasTank==="no" ? "selles stsenaariumis akupaaki ei kasutata, seega kogu toodang jaguneb ainult maja tarbimise ja võrgu vahel." : "simulaator käsitleb akupaagi ülemist ja alumist kihti eraldi. Ülemine osa soojeneb kiiremini.";
+  document.getElementById("explainBox").innerHTML = `
+    <p><strong>Kuupõhine Eesti mudel:</strong> tootmine arvutatakse iga kuu jaoks eraldi päevase kiirguse põhjal ning korrigeeritakse pilvisuse, lume, temperatuuri, suuna ja kaldega.</p>
+    <p><strong>Tarbimisprofiil:</strong> maja päevane tarbimine jaotatakse tundidesse vastavalt valitud profiilile.</p>
+    <p><strong>Akupaak:</strong> ${tankText}</p>
+    <p><strong>Praegune hinnang:</strong> aastane tootmine on umbes <strong>${fmt(year.annualPV,0)} kWh</strong> ning aastane sääst umbes <strong>${fmt(year.annualSavings,0)} €</strong>.</p>`;
+  drawBarChart("angleChart", ["Suund","Kalle","Pilvisus","Päikese nurk"], [orientationFactor(v.roofAzimuth)*100, tiltFactor(v.tilt,v.month)*100, cloudFactor(v.cloudiness)*100, sunDragFactor()*100], ["#1f78ff","#ff9f1c","#1ea971","#8a5cff"], x=>fmt(x,0)+"%");
+}
+
+function renderStatus(v,s,year){
+  const box=document.getElementById("statusBox");
+  let cls="good";
+  let text = v.hasTank==="no" ? "Lahendus on üldisem: akupaaki ei kasutata ning toodang jaguneb ainult maja tarbimise ja võrgu vahel." : "Lahendus on tasakaalus: märkimisväärne osa toodangust kasutatakse kohapeal ning akupaak aitab oma tarbimist suurendada.";
+  if(year.annualGrid > year.annualPV*0.28){cls="warn"; text="Aastas tekib märkimisväärne ülejääk. See viitab sellele, et suvel on tootmist rohkem, kui maja ja akupaak vajavad.";}
+  if(v.hasTank!=="no" && s.tankUseTotal<3 && s.dailyPV>10){cls="bad"; text="Akupaaki jõuab vähe energiat võrreldes toodanguga. Kontrolli küttekeha võimsust, algtemperatuuri ja juhtimisloogikat.";}
+  box.className="status "+cls;
+  box.textContent=text;
+}
+
+function renderTables(v,s,year){
+  document.getElementById("hourTable").innerHTML = s.rows.map(r=>`<tr><td>${r.hour}</td><td>${fmt(r.pv,2)}</td><td>${fmt(r.house,2)}</td><td>${fmt(r.tank,2)}</td><td>${fmt(r.grid,2)}</td><td>${v.hasTank==="no"?"—":fmt(r.top,1)}</td><td>${v.hasTank==="no"?"—":fmt(r.bottom,1)}</td></tr>`).join("");
+  document.getElementById("summaryTable").innerHTML = `
+    <tr><td>Vaadeldava kuu päevane PV toodang</td><td>${fmt(s.dailyPV,1)} kWh/p</td></tr>
+    <tr><td>Majas kasutatud energia</td><td>${fmt(s.houseUseTotal,1)} kWh/p</td></tr>
+    <tr><td>Akupaaki salvestatud</td><td>${v.hasTank==="no" ? "0,0 kWh/p" : fmt(s.tankUseTotal,1)+" kWh/p"}</td></tr>
+    <tr><td>Võrku / ülejääk</td><td>${fmt(s.gridTotal,1)} kWh/p</td></tr>
+    <tr><td>Oma tarbimise määr</td><td>${fmt(s.selfUse,1)}%</td></tr>
+    <tr><td>Aastane tootmine</td><td>${fmt(year.annualPV,0)} kWh/a</td></tr>
+    <tr><td>Aastane sääst</td><td>${fmt(year.annualSavings,0)} €</td></tr>
+    <tr><td>Täpsem tasuvus</td><td>${Number.isFinite(year.paybackDetailed) ? year.paybackDetailed+" a" : "üle 15 a"}</td></tr>`;
+  const degreeKwh=v.tankSize*0.001163;
+  document.getElementById("physicsTable").innerHTML = `
+    <tr><td>Katuse pindala</td><td>${fmt(s.roofArea,1)} m²</td></tr>
+    <tr><td>Paneelide hinnanguline pindala</td><td>${fmt(s.usedArea,1)} m²</td></tr>
+    <tr><td>Paneelide katvus katusel</td><td>${fmt(s.coverage,1)}%</td></tr>
+    <tr><td>1 °C tõus akupaagis</td><td>${v.hasTank==="no" ? "akupaaki pole" : fmt(degreeKwh,2)+" kWh"}</td></tr>
+    <tr><td>Akupaagi salvestusruum</td><td>${v.hasTank==="no" ? "akupaaki pole" : fmt(s.tankCapacity,1)+" kWh"}</td></tr>
+    <tr><td>Ülemine kiht päeva lõpus</td><td>${v.hasTank==="no" ? "—" : fmt(s.topTemp,1)+" °C"}</td></tr>
+    <tr><td>Alumine kiht päeva lõpus</td><td>${v.hasTank==="no" ? "—" : fmt(s.bottomTemp,1)+" °C"}</td></tr>
+    <tr><td>Lohistatud päikese tegur</td><td>${fmt(sunDragFactor()*100,0)}%</td></tr>`;
+  document.getElementById("financeTable").innerHTML = `
+    <tr><td>Aastane sääst / tulu</td><td>${fmt(year.annualSavings,0)} €</td></tr>
+    <tr><td>Süsteemi hind</td><td>${fmt(v.systemCost,0)} €</td></tr>
+    <tr><td>Lihtne tasuvus</td><td>${Number.isFinite(year.paybackSimple) ? fmt(year.paybackSimple,1)+" aastat" : "—"}</td></tr>
+    <tr><td>Täpsem tasuvus</td><td>${Number.isFinite(year.paybackDetailed) ? year.paybackDetailed+" aastat" : "üle 15 aasta"}</td></tr>
+    <tr><td>Aastane võrgu müügitulu</td><td>${fmt(year.annualGrid*v.gridSellPrice,0)} €</td></tr>
+    <tr><td>Aastane oma tarbimise väärtus</td><td>${fmt((year.annualHouse+year.annualTank)*v.electricityPrice,0)} €</td></tr>`;
+  document.getElementById("monthlyTable").innerHTML = year.monthly.map(m=>`<tr><td>${monthNames[m.month-1]}</td><td>${fmt(m.pv,0)}</td><td>${fmt(m.house,0)}</td><td>${fmt(m.tank,0)}</td><td>${fmt(m.grid,0)}</td><td>${fmt(m.selfUse,0)}%</td><td>${fmt(m.save,0)}</td></tr>`).join("");
+}
+
+function renderMonthlyChart(year){
+  drawLineChart("monthlyChart", [{name:"PV toodang",data:year.monthly.map(x=>x.pv),color:"#1f78ff"},{name:"Sääst",data:year.monthly.map(x=>x.save),color:"#1ea971"}], monthNames.map(m=>m.slice(0,3)));
+}
+
+function renderScenarios(v){
+  const grid=document.getElementById("scenarioGrid");
+  const sizes=[6,8,10];
+  grid.innerHTML = sizes.map(size=>{
+    const y=yearlyModel(v,size), sim=simulateMonth(v,v.month,null,size);
+    const badge=size===8?"tasakaalus":(size<8?"väiksem":"suurem");
+    return `<div class="scenarioCard"><h4>${size} kWp <span class="pill">${badge}</span></h4><div class="big">${fmt(y.annualPV,0)} kWh</div><div class="small">aastane tootmine</div><table style="margin-top:8px"><tr><td>Aastane sääst</td><td>${fmt(y.annualSavings,0)} €</td></tr><tr><td>Tasuvus</td><td>${Number.isFinite(y.paybackDetailed)?y.paybackDetailed+" a":"15+ a"}</td></tr><tr><td>Vaadeldav kuu</td><td>${fmt(sim.dailyPV,1)} kWh/p</td></tr><tr><td>Võrku</td><td>${fmt(y.annualGrid,0)} kWh/a</td></tr></table></div>`;
+  }).join("");
+}
+
+function bindControls(){
+  ids.forEach(id=>{
+    const el=document.getElementById(id);
+    el.addEventListener("input", ()=>{ if(id==="weatherPreset") applyWeatherPreset(); update(); });
+    el.addEventListener("change", ()=>{ if(id==="weatherPreset") applyWeatherPreset(); update(); });
+  });
+  document.getElementById("presetBtn").addEventListener("click", ()=>{
+    ids.forEach(id=>{document.getElementById(id).value=defaults[id];});
+    applyWeatherPreset(); sunPos={x:130,y:80}; update();
+  });
+  document.getElementById("recalcBtn").addEventListener("click", update);
+}
+
+function update(){
+  const v=getValues();
+  if(v.tankTargetTemp < v.tankStartTemp){document.getElementById("tankTargetTemp").value=v.tankStartTemp;}
+  updateLabels(v);
+  const s=simulateMonth(v);
+  const year=yearlyModel(v);
+  renderMetrics(v,s,year);
+  renderScene(v,s);
+  renderExplain(v,s,year);
+  renderStatus(v,s,year);
+  renderTables(v,s,year);
+  renderMonthlyChart(year);
+  renderFinanceChart(year,v);
+  renderScenarios(v);
+
+  const labels=Array.from({length:24},(_,i)=>String(i).padStart(2,"0"));
+  drawLineChart("dayChart",[
+    {name:"PV tootmine",data:s.pvSeries,color:"#1f78ff"},
+    {name:"Maja vajadus",data:s.houseSeries,color:"#1ea971"},
+    {name:"Akupaaki",data:s.tankSeries,color:"#ff9f1c"},
+    {name:"Võrku",data:s.gridSeries,color:"#d83b3b"}],labels);
+  drawLineChart("tempChart",[
+    {name:"Ülemine kiht",data:s.topSeries,color:"#ff9f1c"},
+    {name:"Alumine kiht",data:s.bottomSeries,color:"#8a5cff"}],labels, Math.max(v.tankTargetTemp+5,90));
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  bindControls();
+  applyWeatherPreset();
+  update();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>pH labor v13 – nupud parandatud</title>
+<style>
+  :root{
+    --bg:#f3f7fc;
+    --panel:#ffffff;
+    --line:#d8e2f0;
+    --text:#1d2a3f;
+    --muted:#66758f;
+    --accent:#2563eb;
+    --good:#0f9d58;
+    --bad:#d93025;
+    --warn:#b45309;
+    --shadow:0 10px 26px rgba(29,56,102,.10);
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:linear-gradient(180deg,#edf4ff 0%, #f8fbff 44%, #f3f7fc 100%);
+    color:var(--text);
+  }
+  .container{max-width:1580px;margin:0 auto;padding:12px}
+  .topbar{
+    background:linear-gradient(135deg,#fff,#eef5ff 58%, #f7f3ff);
+    border:1px solid var(--line);
+    border-radius:24px;
+    box-shadow:var(--shadow);
+    padding:14px 16px;
+    display:grid;
+    grid-template-columns:1.35fr .85fr;
+    gap:14px;
+    align-items:start;
+  }
+  .topbar h1{margin:0 0 6px;font-size:clamp(24px,3vw,34px)}
+  .topbar p{margin:0;color:var(--muted);line-height:1.45;font-size:14px}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .badge{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:12px}
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .summary-card{border:1px solid var(--line);background:rgba(255,255,255,.9);border-radius:16px;padding:10px 12px;font-size:13px;line-height:1.4}
+  .summary-card b{display:block;margin-bottom:4px}
+  .layout{display:grid;grid-template-columns:280px 1fr;gap:14px;margin-top:14px;align-items:start}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+  .panel-head{padding:12px 14px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#f8fbff);display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .panel-head h2,.panel-head h3{margin:0;font-size:17px}
+  .panel-body{padding:12px 14px}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  .stack{display:grid;gap:12px}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap}
+  button{font:inherit;border:none;cursor:pointer}
+  .btn,.mode-btn,.indicator-btn{
+    border:1px solid var(--line);background:#fff;border-radius:12px;padding:9px 11px;
+    transition:.18s transform,.18s border-color,.18s background;
+  }
+  .btn:hover,.mode-btn:hover,.indicator-btn:hover{transform:translateY(-1px);border-color:#b4c8ea}
+  .btn.primary{background:linear-gradient(180deg,#3376ff,#1f67ee);color:#fff;border-color:#2066eb}
+  .btn.secondary{background:#eef5ff;color:#1643a2;border-color:#98b7fb}
+  .mode-btn.active,.indicator-btn.active{background:#eef5ff;border-color:#84abff;color:#1448ae}
+  .steps{display:grid;gap:8px}
+  .step{border:1px solid var(--line);background:#f8fbff;border-radius:14px;padding:10px 11px;font-size:13px;line-height:1.35}
+  .step b{display:block;margin-bottom:2px}
+  .ribbon-card{border:1px solid var(--line);background:#fbfdff;border-radius:14px;padding:10px}
+  .ribbon-title{font-size:13px;font-weight:700;margin-bottom:6px}
+  .band{height:15px;border-radius:999px;overflow:hidden;border:1px solid rgba(0,0,0,.08);display:grid}
+  .band.cells-3{grid-template-columns:repeat(3,1fr)}
+  .band.cells-15{grid-template-columns:repeat(15,1fr)}
+  .band span{display:block}
+  .labels{display:grid;margin-top:4px;color:var(--muted);font-size:10px}
+  .labels.cells-3{grid-template-columns:repeat(3,1fr)}
+  .labels.cells-15{grid-template-columns:repeat(15,1fr)}
+  .labels div{text-align:center}
+  .workspace{display:grid;gap:12px}
+  .status-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+  .status{min-height:46px;border:1px solid var(--line);background:#f8fbff;border-radius:14px;padding:10px 12px;font-size:13px;color:#36517a;line-height:1.35}
+  .tube-section{border:1px solid var(--line);border-radius:18px;padding:12px;background:linear-gradient(180deg,#fff,#fbfdff)}
+  .tube-grid{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:10px}
+  .tube-card{border:1px solid var(--line);border-radius:16px;padding:10px 8px;background:#fff;display:grid;gap:8px;justify-items:center;align-content:start}
+  .tube-card.active{border-color:#7ca7ff;box-shadow:0 0 0 3px rgba(80,126,255,.12);background:#f8fbff}
+  .tube-card.universal-active .strip-wrap{width:72px;height:18px;border-width:2px}
+  .tube-card .title{font-weight:800;font-size:15px}
+  .tube-card .sub{font-size:11px;color:var(--muted);text-align:center;min-height:28px}
+  .tube{width:64px;height:150px;border:4px solid #c7d6ec;border-top-width:8px;border-radius:16px 16px 22px 22px;position:relative;overflow:hidden;background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(247,250,255,.84));box-shadow:inset 0 0 0 3px rgba(255,255,255,.6)}
+  .liquid{position:absolute;left:0;right:0;bottom:0;height:68%;background:rgba(255,255,255,.15);transition:.22s background}
+  .liquid::after{content:"";position:absolute;top:-8px;left:0;right:0;height:16px;background:rgba(255,255,255,.24);border-radius:50%}
+  .strip-wrap{width:58px;height:12px;border-radius:999px;border:1px solid var(--line);overflow:hidden;background:repeating-linear-gradient(45deg,#eef4ff,#eef4ff 6px,#f9fbff 6px,#f9fbff 12px)}
+  .strip-fill{width:100%;height:100%;background:transparent}
+  .meter{border:1px dashed #9ab1d8;background:#f4f8ff;border-radius:10px;padding:7px 8px;width:100%;text-align:center;font-size:12px;min-height:34px}
+  .indicator-bar{border:1px solid var(--line);border-radius:18px;padding:12px;background:#fff;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start}
+  .indicator-group{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .indicator-btn{text-align:left;min-height:64px}
+  .indicator-btn .title{font-weight:700;font-size:14px;margin-bottom:3px}
+  .indicator-btn .desc{font-size:11px;color:var(--muted);line-height:1.25}
+  .selected-box{min-width:250px;border:2px solid #98b7fb;background:linear-gradient(180deg,#f8fbff,#eef5ff);border-radius:14px;padding:10px 12px}
+  .selected-box .selected-main{font-size:15px;line-height:1.45}
+  .selected-box .selected-main b{color:#123f9f}
+  .apply-hero .btn{width:100%;padding:16px 18px;font-size:17px;font-weight:800;border-radius:16px;box-shadow:0 10px 24px rgba(31,103,238,.22)}
+  .table-section{border:1px solid var(--line);border-radius:18px;padding:12px;background:#fff}
+  .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px}
+  table{width:100%;min-width:980px;border-collapse:collapse;background:#fff}
+  th,td{border-bottom:1px solid #e7eef8;padding:8px 8px;text-align:center;font-size:13px}
+  th{background:#f8fbff;position:sticky;top:0;z-index:1}
+  tr:last-child td{border-bottom:none}
+  tr.active-row td{background:#f7fbff}
+  .row-label{font-weight:800;text-align:left;min-width:64px}
+  .select,.num-input{width:100%;min-width:94px;padding:7px 8px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}
+  .num-input{min-width:74px;text-align:center}
+  .select:focus,.num-input:focus{outline:none;border-color:#5e94ff;box-shadow:0 0 0 3px rgba(94,148,255,.16)}
+  .ok{background:#f0fbf5 !important;border-color:#7ad3a1 !important}
+  .bad{background:#fff4f4 !important;border-color:#f0a1a1 !important}
+  .lock-note{margin-top:10px;padding:10px 12px;border-radius:12px;background:#fff8ef;border:1px solid #f3d5af;color:#8a5313;font-size:13px}
+  .teacher-list{display:grid;gap:8px}
+  .teacher-item{border:1px solid var(--line);border-radius:14px;padding:10px 11px;background:#fbfdff;font-size:12px;line-height:1.35}
+  .teacher-item h4{margin:0 0 4px;font-size:14px}
+  .hidden-box{display:none}
+  .hidden-box.show{display:block}
+  .alert-box{flex:1;min-width:280px;border:2px solid #f2b5b0;background:#fff5f5;color:#b42318;border-radius:14px;padding:10px 12px;font-size:14px;font-weight:800;line-height:1.35}
+  .alert-box.ok{border-color:#9ad3af;background:#f0fbf5;color:#0f6a3e}
+  .password-overlay{position:fixed;inset:0;background:rgba(5,18,45,.56);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+  .password-overlay.show{display:flex}
+  .password-modal{width:min(420px,100%);background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:0 26px 60px rgba(10,27,68,.30);overflow:hidden}
+  .password-head{padding:16px 18px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#f6f9ff)}
+  .password-head h3{margin:0}
+  .password-body{padding:18px;display:grid;gap:12px}
+  .password-input{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:12px;font:inherit;font-size:16px}
+  .error{color:var(--bad);font-size:14px;min-height:20px}
+  @media (max-width:1450px){.layout{grid-template-columns:1fr}.topbar{grid-template-columns:1fr}}
+  @media (max-width:1200px){.tube-grid{grid-template-columns:repeat(3,minmax(120px,1fr))}.indicator-group{grid-template-columns:repeat(2,1fr)}.indicator-bar{grid-template-columns:1fr}}
+  @media (max-width:760px){.tube-grid{grid-template-columns:repeat(2,minmax(120px,1fr))}.summary{grid-template-columns:1fr}.status-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+  <section class="topbar">
+    <div>
+      <h1>pH labor</h1>
+      <p>Juhend: Vali katseklaas, lisa indikaator, täida tabel ja vajuta Kontrolli tabelit. Kui kõik vastused on õiged, saad pH mõõta. </p>
+      <div class="badges">
+        <div class="badge">6 katseklaasi kõrvuti</div>
+        <div class="badge">indikaatorid ühes reas</div>
+        <div class="badge">lai tabel all</div>
+        <div class="badge">õpetajarežiim salasõnaga</div>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="summary-card"><b>Tööloogika</b>Vaatlus → värvivalik → happe/aluse määramine → ioonide võrdlus → kontroll → pH mõõtmine.</div>
+      <div class="summary-card"><b>Õpilase roll</b>Tabel ei täitu automaatselt. Värvid ja ioonide suhe tuleb valida ise.</div>
+      <div class="summary-card"><b>Peamine mõte</b>Happelises lahuses on H<sup>+</sup> ioone rohkem, aluselises OH<sup>−</sup> ioone rohkem.</div>
+    </div>
+  </section>
+
+  <section class="layout">
+    <aside class="panel">
+      <div class="panel-head">
+        <h2>Juhis</h2>
+        <div class="btn-row">
+          <button class="mode-btn active" id="studentModeBtn" type="button">Õpilasrežiim</button>
+          <button class="mode-btn" id="teacherModeBtn" type="button">Õpetajarežiim</button>
+        </div>
+      </div>
+      <div class="panel-body stack">
+        <div class="steps">
+          <div class="step"><b>1. Vali katseklaas</b>Klõpsa A–F.</div>
+          <div class="step"><b>2. Vali indikaator</b>Indikaatorid on kõik koos katseklaaside all.</div>
+          <div class="step"><b>3. Lisa indikaator</b>Kasuta suurt sinist nuppu.</div>
+          <div class="step"><b>4. Täida tabel</b>Vali värv rippmenüüst ise.</div>
+          <div class="step"><b>5. Märgi ioonid</b>Vali, kas H+ rohkem, OH- rohkem või võrdselt.</div>
+          <div class="step"><b>6. Kontrolli ja ava pH-meeter</b>Valed tuleb parandada enne mõõtmist.</div>
+        </div>
+
+        <div class="ribbon-card">
+          <div class="ribbon-title">Lakmus</div>
+          <div class="band cells-3"><span style="background:#d32f2f"></span><span style="background:#7b1fa2"></span><span style="background:#1565c0"></span></div>
+          <div class="labels cells-3"><div>hape</div><div>neutraalne</div><div>alus</div></div>
+        </div>
+        <div class="ribbon-card">
+          <div class="ribbon-title">Fenoolftaleiin</div>
+          <div class="band cells-3"><span style="background:#ffffff"></span><span style="background:#ffffff"></span><span style="background:#ec4899"></span></div>
+          <div class="labels cells-3"><div>hape</div><div>neutraalne</div><div>alus</div></div>
+        </div>
+        <div class="ribbon-card">
+          <div class="ribbon-title">Metüüloranž</div>
+          <div class="band cells-3"><span style="background:#d32f2f"></span><span style="background:#fb8c00"></span><span style="background:#f6c945"></span></div>
+          <div class="labels cells-3"><div>hape</div><div>neutraalne</div><div>alus</div></div>
+        </div>
+        <div class="ribbon-card">
+          <div class="ribbon-title">Universaalindikaator</div>
+          <div class="band cells-15">
+            <span style="background:#8b0000"></span><span style="background:#c1121f"></span><span style="background:#e53935"></span><span style="background:#f57c00"></span><span style="background:#ff9800"></span><span style="background:#ffd54f"></span><span style="background:#cddc39"></span><span style="background:#43a047"></span><span style="background:#1abc9c"></span><span style="background:#00acc1"></span><span style="background:#1e88e5"></span><span style="background:#1565c0"></span><span style="background:#3949ab"></span><span style="background:#7b1fa2"></span><span style="background:#6a1b9a"></span>
+          </div>
+          <div class="labels cells-15"><div>0</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div></div>
+        </div>
+
+        <div id="teacherPanel" class="hidden-box">
+          <div class="panel-head" style="margin:-12px -14px 10px -14px;border-radius:0;border-left:none;border-right:none">
+            <h3>Õpetajainfo</h3>
+          </div>
+          <div id="teacherList" class="teacher-list"></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Virtuaalne labor</h2>
+          <div class="btn-row">
+            <button class="btn" id="newSetBtn" type="button">Uus juhuslik komplekt</button>
+            <button class="btn secondary" id="resetObservationsBtn" type="button">Tühjenda vaatlused</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="status-row">
+            <div class="status" id="statusBox">Vali katseklaas, siis indikaator. Tabeli vastused tuleb valida ise.</div>
+            <div class="btn-row">
+              <button class="btn primary" id="unlockMeterBtn" type="button">Ava pH-meeter</button>
+            </div>
+          </div>
+
+          <div class="tube-section" style="margin-top:12px">
+            <div class="tube-grid" id="tubeGrid"></div>
+          </div>
+
+          <div class="indicator-bar" style="margin-top:12px">
+            <div class="indicator-group">
+              <button class="indicator-btn active" data-indicator="lakmus" type="button"><div class="title">Lakmus</div><div class="desc">Klassikaline hape–alus indikaator</div></button>
+              <button class="indicator-btn" data-indicator="fenoolftaleiin" type="button"><div class="title">Fenoolftaleiin</div><div class="desc">Kasulik aluseliste lahuste tuvastamisel</div></button>
+              <button class="indicator-btn" data-indicator="metüüloraanž" type="button"><div class="title">Metüüloranž</div><div class="desc">Hea happeliste lahuste eristamiseks</div></button>
+              <button class="indicator-btn" data-indicator="universaal" type="button"><div class="title">Universaalindikaator</div><div class="desc">Näitab laiemat pH vahemikku</div></button>
+            </div>
+            <div class="selected-box">
+              <div class="selected-main"><b>Valitud katseklaas:</b> <span id="selectedTubeLabel">A</span></div>
+              <div class="selected-main" style="margin-top:4px"><b>Valitud indikaator:</b> <span id="selectedIndicatorLabel">Lakmus</span></div>
+              <div class="small muted" style="margin-top:8px">Kõige olulisem samm on indikaatori lisamine valitud katseklaasile.</div>
+              <div class="btn-row" style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%">
+                <button class="btn primary" style="padding:16px 18px;font-size:17px;font-weight:800;border-radius:16px;" id="applySelectedBtn" type="button">Lisa indikaator valitud katseklaasile</button>
+                <button class="btn primary" style="padding:16px 18px;font-size:17px;font-weight:800;border-radius:16px;background:linear-gradient(180deg,#16a34a,#15803d);border-color:#15803d;" id="checkColorsBtn" type="button">Kontrolli tabelit</button>
+              </div>
+              <div id="tableAlertBox" class="alert-box" style="margin-top:10px">Kontrolli järel näidatakse siin, millistes lahtrites on viga.</div>
+            </div>
+          </div>
+
+          <div class="lock-note" id="meterLockNote">pH-meeter on lukus. See avaneb alles pärast seda, kui kõik värvivalikud tabelis on õiged.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Vaatlustabel ja järeldused</h2>
+          <div class="small muted">Lai tabel katseklaaside all</div>
+        </div>
+        <div class="panel-body">
+          <div class="table-section">
+            <div class="small muted" style="margin-bottom:8px;font-weight:700;color:#b42318">Kui mõni värv, hinnang või ioonide valik on vale, muutub vastav lahter punakaks.</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Katseklaas</th>
+                    <th>Lakmus</th>
+                    <th>Fenoolftaleiin</th>
+                    <th>Metüüloranž</th>
+                    <th>Universaalindikaator</th>
+                    <th>Hinnang</th>
+                    <th>Ioonid</th>
+                    <th>pH hinnang</th>
+                  </tr>
+                </thead>
+                <tbody id="resultsBody"></tbody>
+              </table>
+            </div>
+            <div class="small muted" style="margin-top:10px">Kontrollimisel näidatakse, millised värvivalikud, hinnangud ja ioonide valikud on õiged või valed. Õigeid vastuseid ei kirjutata ette.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+</div>
+
+<div class="password-overlay" id="passwordOverlay" aria-hidden="true">
+  <div class="password-modal">
+    <div class="password-head"><h3>Õpetajarežiim</h3></div>
+    <div class="password-body">
+      <div class="muted">Sisesta salasõna õpetajarežiimi avamiseks.</div>
+      <input type="password" id="teacherPasswordInput" class="password-input" placeholder="Salasõna" />
+      <div class="error" id="passwordError"></div>
+      <div class="btn-row" style="justify-content:flex-end">
+        <button class="btn" id="cancelPasswordBtn" type="button">Loobu</button>
+        <button class="btn primary" id="confirmPasswordBtn" type="button">Ava õpetajarežiim</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const TEACHER_PASSWORD = '12345678';
+  const masterSolutions = [
+    {name:'sidrunimahl', ph:2},{name:'äädikas', ph:3},{name:'õunamahl', ph:4},
+    {name:'piim', ph:6},{name:'puhas vesi', ph:7},{name:'söögisooda lahus', ph:8},
+    {name:'seebilahus', ph:10},{name:'ammoniaagilahus', ph:11},{name:'torupuhasti lahus', ph:13},
+    {name:'gaseeritud joogivesi', ph:5},{name:'mahlajook', ph:4},{name:'hambapasta lahus', ph:9}
+  ];
+  const colorOptions = ['', 'värvitu', 'heleroosa', 'roosa', 'tumeroosa', 'tumepunane', 'punane', 'oranž', 'kollane', 'kollakasroheline', 'roheline', 'sinakasroheline', 'sinine', 'tumesinine', 'violetne', 'lilla'];
+
+  const tubeGrid = document.getElementById('tubeGrid');
+  const resultsBody = document.getElementById('resultsBody');
+  const teacherList = document.getElementById('teacherList');
+  const teacherPanel = document.getElementById('teacherPanel');
+  const statusBox = document.getElementById('statusBox');
+  const meterLockNote = document.getElementById('meterLockNote');
+  const selectedTubeLabel = document.getElementById('selectedTubeLabel');
+  const selectedIndicatorLabel = document.getElementById('selectedIndicatorLabel');
+  const passwordOverlay = document.getElementById('passwordOverlay');
+  const teacherPasswordInput = document.getElementById('teacherPasswordInput');
+  const passwordError = document.getElementById('passwordError');
+
+  let mode = 'student';
+  let teacherUnlocked = false;
+  let selectedIndicator = 'lakmus';
+  let selectedTubeId = 'A';
+  let meterUnlocked = false;
+  let currentSet = [];
+
+  function shuffle(arr){
+    const a = [...arr];
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function universalColor(ph){
+    const map = {0:'#8b0000',1:'#c1121f',2:'#e53935',3:'#f57c00',4:'#ff9800',5:'#ffd54f',6:'#cddc39',7:'#43a047',8:'#1abc9c',9:'#00acc1',10:'#1e88e5',11:'#1565c0',12:'#3949ab',13:'#7b1fa2',14:'#6a1b9a'};
+    return map[Math.round(ph)] || '#43a047';
+  }
+
+  function observedColor(indicator, ph){
+    if(indicator === 'lakmus'){
+      if(ph < 7) return {name:'punane', visual:'#d32f2f', hex:'#d32f2f'};
+      if(ph === 7) return {name:'lilla', visual:'#7b1fa2', hex:'#7b1fa2'};
+      return {name:'sinine', visual:'#1565c0', hex:'#1565c0'};
+    }
+    if(indicator === 'fenoolftaleiin'){
+      if(ph > 7) return {name:'roosa', visual:'rgba(236,72,153,.72)', hex:'#ec4899'};
+      return {name:'värvitu', visual:'rgba(255,255,255,.15)', hex:'#ffffff'};
+    }
+    if(indicator === 'metüüloraanž'){
+      if(ph < 7) return {name:'punane', visual:'#d32f2f', hex:'#d32f2f'};
+      if(ph === 7) return {name:'oranž', visual:'#fb8c00', hex:'#fb8c00'};
+      return {name:'kollane', visual:'#f6c945', hex:'#f6c945'};
+    }
+    if(indicator === 'universaal'){
+      const p = Math.round(ph);
+      const names = {0:'tumepunane',1:'punane',2:'punane',3:'oranž',4:'oranž',5:'kollane',6:'kollakasroheline',7:'roheline',8:'sinakasroheline',9:'sinakasroheline',10:'sinine',11:'tumesinine',12:'violetne',13:'lilla',14:'lilla'};
+      return {name:names[p], visual:universalColor(ph), hex:universalColor(ph)};
+    }
+    return {name:'', visual:'rgba(255,255,255,.15)', hex:'#ffffff'};
+  }
+
+  function selectedIndicatorName(key){
+    return {lakmus:'Lakmus', fenoolftaleiin:'Fenoolftaleiin', metüüloraanž:'Metüüloranž', universaal:'Universaalindikaator'}[key] || key;
+  }
+
+  function getTube(id){ return currentSet.find(t => t.id === id); }
+  function normalize(v){ return (v || '').toLowerCase().trim(); }
+
+  function updateStatus(text){ statusBox.textContent = text; }
+
+  function updateAlertBox(message, isOk=false){
+    const box = document.getElementById('tableAlertBox');
+    if(!box) return;
+    box.textContent = message;
+    box.classList.toggle('ok', !!isOk);
+  }
+
+  function createSet(){
+    const letters = ['A','B','C','D','E','F'];
+    currentSet = shuffle(masterSolutions).slice(0, 6).map((item, idx) => ({
+      id: letters[idx],
+      name: item.name,
+      ph: item.ph,
+      added:{lakmus:false, fenoolftaleiin:false, metüüloraanž:false, universaal:false},
+      student:{lakmus:'', fenoolftaleiin:'', metüüloraanž:'', universaal:'', nature:'', ions:'', phGuess:''},
+      meterMeasured:false
+    }));
+    selectedTubeId = currentSet[0].id;
+    meterUnlocked = false;
+    renderAll();
+    updateStatus('Uus komplekt loodud. Vali katseklaas ja lisa indikaator.');
+    updateAlertBox('Kontrolli järel näidatakse siin, millistes lahtrites on viga.');
+  }
+
+  function colorSelectHtml(value, indicator, tubeId){
+    const opts = colorOptions.map(opt => `<option value="${opt}" ${value===opt?'selected':''}>${opt || 'vali värv'}</option>`).join('');
+    return `<select class="select color-select" data-tube="${tubeId}" data-indicator="${indicator}">${opts}</select>`;
+  }
+
+  function natureSelectHtml(value, tubeId){
+    const opts = [['','vali'],['hape','hape'],['neutraalne','neutraalne'],['alus','alus']].map(([v,l]) => `<option value="${v}" ${value===v?'selected':''}>${l}</option>`).join('');
+    return `<select class="select nature-select" data-tube="${tubeId}">${opts}</select>`;
+  }
+
+  function ionSelectHtml(value, tubeId){
+    const opts = [['','vali'],['H+ rohkem','H+ rohkem'],['OH- rohkem','OH- rohkem'],['võrdselt','võrdselt']].map(([v,l]) => `<option value="${v}" ${value===v?'selected':''}>${l}</option>`).join('');
+    return `<select class="select ion-select" data-tube="${tubeId}">${opts}</select>`;
+  }
+
+  function renderTable(){
+    resultsBody.innerHTML = currentSet.map(row => `
+      <tr class="${row.id===selectedTubeId?'active-row':''}">
+        <td class="row-label">${row.id}</td>
+        <td>${colorSelectHtml(row.student.lakmus,'lakmus',row.id)}</td>
+        <td>${colorSelectHtml(row.student.fenoolftaleiin,'fenoolftaleiin',row.id)}</td>
+        <td>${colorSelectHtml(row.student.metüüloraanž,'metüüloraanž',row.id)}</td>
+        <td>${colorSelectHtml(row.student.universaal,'universaal',row.id)}</td>
+        <td>${natureSelectHtml(row.student.nature,row.id)}</td>
+        <td>${ionSelectHtml(row.student.ions,row.id)}</td>
+        <td><input class="num-input ph-guess" type="number" min="0" max="14" step="1" data-tube="${row.id}" value="${row.student.phGuess}" placeholder="0–14"></td>
+      </tr>
+    `).join('');
+  }
+
+  function renderTubes(){
+    tubeGrid.innerHTML = currentSet.map(tube => {
+      let liquidBg = 'rgba(255,255,255,.15)';
+      let viewText = 'läbipaistev';
+      if(tube.added.lakmus){ liquidBg = observedColor('lakmus', tube.ph).visual; viewText = observedColor('lakmus', tube.ph).name; }
+      if(tube.added.fenoolftaleiin){ liquidBg = observedColor('fenoolftaleiin', tube.ph).visual; viewText = observedColor('fenoolftaleiin', tube.ph).name; }
+      if(tube.added.metüüloraanž){ liquidBg = observedColor('metüüloraanž', tube.ph).visual; viewText = observedColor('metüüloraanž', tube.ph).name; }
+      const stripColor = tube.added.universaal ? observedColor('universaal', tube.ph).hex : 'transparent';
+      const meterText = tube.meterMeasured ? `pH ${tube.ph}` : (tube.added.universaal ? 'universaalriba aktiivne' : 'pH-mõõtmata');
+      const sub = mode === 'teacher' ? `${tube.name}, pH ${tube.ph}` : `vaade: ${viewText}`;
+      return `
+        <div class="tube-card ${tube.id===selectedTubeId?'active':''} ${tube.added.universaal?'universal-active':''}" data-tube-card="${tube.id}">
+          <div class="title">${tube.id}</div>
+          <div class="sub">${sub}</div>
+          <div class="tube"><div class="liquid" style="background:${liquidBg}"></div></div>
+          <div class="strip-wrap" title="Universaalindikaatori testiriba"><div class="strip-fill" style="background:${stripColor}"></div></div>
+          <div class="small muted">${tube.added.universaal ? 'Universaalindikaatori tulemus on ribal.' : 'Ribal tulemust veel ei ole.'}</div>
+          <div class="meter">${meterText}</div>
+          <div class="btn-row" style="justify-content:center">
+            <button class="btn secondary choose-tube-btn" data-tube="${tube.id}" type="button">Vali</button>
+            <button class="btn measure-btn" data-tube="${tube.id}" type="button">Mõõda</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderTeacherList(){
+    teacherList.innerHTML = currentSet.map(t => `
+      <div class="teacher-item">
+        <h4>${t.id} – ${t.name}</h4>
+        <div><b>Tegelik pH:</b> ${t.ph}</div>
+        <div><b>Lakmus:</b> ${observedColor('lakmus', t.ph).name}</div>
+        <div><b>Fenoolftaleiin:</b> ${observedColor('fenoolftaleiin', t.ph).name}</div>
+        <div><b>Metüüloranž:</b> ${observedColor('metüüloraanž', t.ph).name}</div>
+        <div><b>Universaalindikaator:</b> ${observedColor('universaal', t.ph).name}</div>
+        <div><b>Hinnang:</b> ${t.ph < 7 ? 'hape' : t.ph === 7 ? 'neutraalne' : 'alus'}</div>
+        <div><b>Ioonid:</b> ${t.ph < 7 ? 'H+ rohkem' : t.ph === 7 ? 'võrdselt' : 'OH- rohkem'}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderAll(){
+    renderTable();
+    renderTubes();
+    renderTeacherList();
+    teacherPanel.classList.toggle('show', mode==='teacher');
+    document.getElementById('studentModeBtn').classList.toggle('active', mode==='student');
+    document.getElementById('teacherModeBtn').classList.toggle('active', mode==='teacher');
+    document.querySelectorAll('.indicator-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.indicator===selectedIndicator));
+    selectedTubeLabel.textContent = selectedTubeId;
+    selectedIndicatorLabel.textContent = selectedIndicatorName(selectedIndicator);
+    meterLockNote.style.display = meterUnlocked ? 'none' : 'block';
+  }
+
+  function validateColors(){
+    let allOk = true, missing = 0, wrong = 0;
+    document.querySelectorAll('.color-select').forEach(sel => {
+      sel.classList.remove('ok','bad');
+      const tube = getTube(sel.dataset.tube);
+      const expected = normalize(observedColor(sel.dataset.indicator, tube.ph).name);
+      const actual = normalize(sel.value);
+      if(!actual){ missing++; sel.classList.add('bad'); allOk = false; return; }
+      if(actual === expected){ sel.classList.add('ok'); }
+      else { sel.classList.add('bad'); wrong++; allOk = false; }
+    });
+    if(allOk){
+      updateStatus('Värvivalikud on korras. Kontrolli ka hinnangut ja ioonide suhet.');
+      updateAlertBox('Värvivalikud on korras. Kontrolli nüüd hinnangut ja ioonide suhet.', true);
+    } else {
+      updateStatus(`Paranda värvivalikuid. Puudu: ${missing}. Valed: ${wrong}.`);
+      updateAlertBox(`Värvivalikutes on vigu. Puudu: ${missing}. Valed: ${wrong}. Punased lahtrid tuleb parandada.`);
+    }
+    return allOk;
+  }
+
+  function validateConcepts(){
+    let allOk = true, missing = 0, wrong = 0;
+    document.querySelectorAll('.nature-select').forEach(sel => {
+      sel.classList.remove('ok','bad');
+      const tube = getTube(sel.dataset.tube);
+      const expected = tube.ph < 7 ? 'hape' : tube.ph === 7 ? 'neutraalne' : 'alus';
+      const actual = (sel.value || '').trim();
+      if(!actual){ missing++; sel.classList.add('bad'); allOk = false; }
+      else if(actual === expected){ sel.classList.add('ok'); }
+      else { sel.classList.add('bad'); wrong++; allOk = false; }
+    });
+    document.querySelectorAll('.ion-select').forEach(sel => {
+      sel.classList.remove('ok','bad');
+      const tube = getTube(sel.dataset.tube);
+      const expected = tube.ph < 7 ? 'H+ rohkem' : tube.ph === 7 ? 'võrdselt' : 'OH- rohkem';
+      const actual = (sel.value || '').trim();
+      if(!actual){ missing++; sel.classList.add('bad'); allOk = false; }
+      else if(actual === expected){ sel.classList.add('ok'); }
+      else { sel.classList.add('bad'); wrong++; allOk = false; }
+    });
+    return {allOk, missing, wrong};
+  }
+
+  function unlockMeter(){
+    const colorsOk = validateColors();
+    const conceptResult = validateConcepts();
+    const ok = colorsOk && conceptResult.allOk;
+    meterUnlocked = ok;
+    renderAll();
+    if(ok){
+      updateStatus('Värvivalikud, hinnangud ja ioonid on õiged. pH-meeter on avatud.');
+      updateAlertBox('Kõik kontrollitavad väljad on õiged. Võid pH-d mõõta.', true);
+    } else {
+      const totalIssues = conceptResult.missing + conceptResult.wrong;
+      updateStatus(`Paranda tabelit. Puudu või valesid hinnanguid/ioone: ${totalIssues}. pH-meeter ei avane veel.`);
+      updateAlertBox(`Tabelis on veel vigu. Punased lahtrid näitavad, mida peab parandama. Hinnangute ja ioonide vead: ${totalIssues}.`);
+    }
+  }
+
+  function applyIndicatorToSelected(){
+    const tube = getTube(selectedTubeId);
+    if(!tube) return;
+    if(selectedIndicator === 'universaal'){
+      tube.added.universaal = true;
+      updateStatus(`Universaalindikaator lisatud katseklaasile ${tube.id}. Vaata riba värvi ja vali värvus tabelis ise.`);
+    } else {
+      tube.added.lakmus = false;
+      tube.added.fenoolftaleiin = false;
+      tube.added.metüüloraanž = false;
+      tube.added[selectedIndicator] = true;
+      updateStatus(`${selectedIndicatorName(selectedIndicator)} lisatud katseklaasile ${tube.id}. Eelmine toruvärv asendati uue indikaatori värviga.`);
+    }
+    renderTubes();
+  }
+
+  function measureTube(tubeId){
+    if(!meterUnlocked){
+      updateStatus('pH-meeter on veel lukus. Kõigepealt peavad värvid, hinnangud ja ioonid õiged olema.');
+      return;
+    }
+    const tube = getTube(tubeId);
+    tube.meterMeasured = true;
+    renderTubes();
+    updateStatus(`Katseklaasi ${tube.id} pH mõõdetud.`);
+  }
+
+  function clearObservations(){
+    currentSet.forEach(t => {
+      t.added = {lakmus:false, fenoolftaleiin:false, metüüloraanž:false, universaal:false};
+      t.student = {lakmus:'', fenoolftaleiin:'', metüüloraanž:'', universaal:'', nature:'', ions:'', phGuess:''};
+      t.meterMeasured = false;
+    });
+    meterUnlocked = false;
+    renderAll();
+    updateStatus('Kõik vaatlused ja tabeli valikud on tühjendatud.');
+    updateAlertBox('Tabel on tühjendatud. Lisa indikaatorid ja täida tabel uuesti.');
+  }
+
+  function setMode(newMode){
+    mode = newMode;
+    renderAll();
+  }
+
+  function openPasswordModal(){
+    passwordOverlay.classList.add('show');
+    passwordError.textContent = '';
+    teacherPasswordInput.value = '';
+    setTimeout(() => teacherPasswordInput.focus(), 40);
+  }
+
+  function closePasswordModal(){
+    passwordOverlay.classList.remove('show');
+    passwordError.textContent = '';
+    teacherPasswordInput.value = '';
+  }
+
+  function tryTeacherMode(){
+    if(teacherUnlocked){ setMode('teacher'); updateStatus('Õpetajarežiim avatud.'); }
+    else openPasswordModal();
+  }
+
+  function bindEvents(){
+    document.getElementById('newSetBtn').addEventListener('click', createSet);
+    document.getElementById('resetObservationsBtn').addEventListener('click', clearObservations);
+    document.getElementById('unlockMeterBtn').addEventListener('click', unlockMeter);
+    document.getElementById('applySelectedBtn').addEventListener('click', applyIndicatorToSelected);
+    document.getElementById('checkColorsBtn').addEventListener('click', () => { validateColors(); validateConcepts(); });
+
+    document.getElementById('studentModeBtn').addEventListener('click', () => { setMode('student'); updateStatus('Õpilasrežiim aktiivne.'); });
+    document.getElementById('teacherModeBtn').addEventListener('click', tryTeacherMode);
+
+    document.querySelectorAll('.indicator-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedIndicator = btn.dataset.indicator;
+        renderAll();
+        updateStatus(`Valitud indikaator: ${selectedIndicatorName(selectedIndicator)}.`);
+      });
+    });
+
+    document.getElementById('confirmPasswordBtn').addEventListener('click', () => {
+      if(teacherPasswordInput.value === TEACHER_PASSWORD){
+        teacherUnlocked = true;
+        closePasswordModal();
+        setMode('teacher');
+        updateStatus('Õpetajarežiim avatud.');
+      } else passwordError.textContent = 'Vale salasõna.';
+    });
+    document.getElementById('cancelPasswordBtn').addEventListener('click', () => { closePasswordModal(); setMode('student'); });
+    passwordOverlay.addEventListener('click', (e) => { if(e.target === passwordOverlay){ closePasswordModal(); setMode('student'); } });
+    teacherPasswordInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter') document.getElementById('confirmPasswordBtn').click();
+      if(e.key === 'Escape') closePasswordModal();
+    });
+
+    document.addEventListener('click', (e) => {
+      const chooseBtn = e.target.closest('.choose-tube-btn');
+      if(chooseBtn){
+        selectedTubeId = chooseBtn.dataset.tube;
+        renderAll();
+        updateStatus(`Valitud katseklaas ${selectedTubeId}.`);
+      }
+      const tubeCard = e.target.closest('[data-tube-card]');
+      if(tubeCard && !e.target.closest('button')){
+        selectedTubeId = tubeCard.dataset.tubeCard;
+        renderAll();
+      }
+      const measureBtn = e.target.closest('.measure-btn');
+      if(measureBtn) measureTube(measureBtn.dataset.tube);
+    });
+
+    document.addEventListener('change', (e) => {
+      if(e.target.classList.contains('color-select')){
+        const tube = getTube(e.target.dataset.tube);
+        tube.student[e.target.dataset.indicator] = e.target.value;
+        e.target.classList.remove('ok','bad');
+        updateAlertBox('Muutsid tabelit. Vajadusel kontrolli uuesti.');
+      }
+      if(e.target.classList.contains('nature-select')){
+        const tube = getTube(e.target.dataset.tube);
+        tube.student.nature = e.target.value;
+        e.target.classList.remove('ok','bad');
+        updateAlertBox('Muutsid tabelit. Vajadusel kontrolli uuesti.');
+      }
+      if(e.target.classList.contains('ion-select')){
+        const tube = getTube(e.target.dataset.tube);
+        tube.student.ions = e.target.value;
+        e.target.classList.remove('ok','bad');
+        updateAlertBox('Muutsid tabelit. Vajadusel kontrolli uuesti.');
+      }
+    });
+
+    document.addEventListener('input', (e) => {
+      if(e.target.classList.contains('ph-guess')){
+        const tube = getTube(e.target.dataset.tube);
+        tube.student.phGuess = e.target.value;
+      }
+    });
+  }
+
+  bindEvents();
+  createSet();
+})();
+</script>
+</body>
+</html>
